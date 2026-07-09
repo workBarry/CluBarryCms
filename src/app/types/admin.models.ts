@@ -6,7 +6,7 @@ export type PaymentStatus = 'unpaid' | 'paid' | 'refunded';
 export type AnnouncementStatus = 'draft' | 'published';
 
 export interface User {
-  id: number;
+  id: string;
   avatar: string;
   name: string;
   studentId: string;
@@ -20,7 +20,7 @@ export interface User {
 }
 
 export interface Event {
-  id: number;
+  id: string;
   title: string;
   cover: string;
   description: string;
@@ -33,14 +33,14 @@ export interface Event {
   category: string;
   tags: string[];
   status: EventStatus;
-  createdBy: number;
+  createdBy: string;
   createdAt: string;
 }
 
 export interface Registration {
-  id: number;
-  userId: number;
-  eventId: number;
+  id: string;
+  userId: string;
+  eventId: string;
   paymentStatus: PaymentStatus;
   checkIn: boolean;
   status: RegistrationStatus;
@@ -48,19 +48,40 @@ export interface Registration {
 }
 
 export interface Announcement {
-  id: number;
+  id: string;
   title: string;
   content: string;
   cover: string;
   isPinned: boolean;
   status: AnnouncementStatus;
-  createdBy: number;
+  createdBy: string;
   createdAt: string;
 }
 
+export type PermissionKey =
+  | 'Dashboard'
+  | '社員管理'
+  | '活動管理'
+  | '公告管理'
+  | '報名管理'
+  | '幹部管理'
+  | '權限管理'
+  | '系統設定';
+
+export const PERMISSION_KEYS: PermissionKey[] = [
+  'Dashboard',
+  '社員管理',
+  '活動管理',
+  '公告管理',
+  '報名管理',
+  '幹部管理',
+  '權限管理',
+  '系統設定',
+];
+
 export interface PermissionGroup {
   role: UserRole;
-  permissions: Record<string, boolean>;
+  permissions: Record<PermissionKey, boolean>;
 }
 
 export interface ClubSettings {

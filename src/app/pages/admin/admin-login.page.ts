@@ -57,7 +57,7 @@ export class AdminLoginPage {
     'amy&#64;example.com / password (Activity Leader)',
   ];
 
-  submit(): void {
-    this.auth.login(this.email, this.password);
+  async submit(): Promise<void> {
+    await this.auth.login(this.email, this.password);
   }
 }

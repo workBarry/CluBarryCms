@@ -83,11 +83,11 @@ export class RegistrationsAdminPage {
       });
   }
 
-  togglePaid(id: number, current: string): void {
+  togglePaid(id: string, current: string): void {
     this.data.updateRegistration(id, { paymentStatus: current === 'paid' ? 'unpaid' : 'paid' });
   }
 
-  toggleCheckIn(id: number, current: boolean): void {
+  toggleCheckIn(id: string, current: boolean): void {
     this.data.updateRegistration(id, { checkIn: !current });
   }
 

@@ -165,19 +165,19 @@ export const announcements: Announcement[] = [
 export const permissions: PermissionGroup[] = [
   {
     role: 'Admin',
-    permissions: { Dashboard: true, 公告: true, 活動: true, 社員: true, 報名: true, 系統: true },
+    permissions: { Dashboard: true, 社員管理: true, 活動管理: true, 公告管理: true, 報名管理: true, 幹部管理: true, 權限管理: true, 系統設定: true },
   },
   {
     role: 'Vice President',
-    permissions: { Dashboard: true, 公告: true, 活動: true, 社員: true, 報名: true, 系統: false },
+    permissions: { Dashboard: true, 社員管理: true, 活動管理: true, 公告管理: true, 報名管理: true, 幹部管理: true, 權限管理: false, 系統設定: false },
   },
   {
     role: 'Activity Leader',
-    permissions: { Dashboard: true, 公告: true, 活動: true, 社員: false, 報名: true, 系統: false },
+    permissions: { Dashboard: true, 社員管理: false, 活動管理: true, 公告管理: true, 報名管理: true, 幹部管理: false, 權限管理: false, 系統設定: false },
   },
   {
     role: 'Member',
-    permissions: { Dashboard: false, 公告: false, 活動: false, 社員: false, 報名: false, 系統: false },
+    permissions: { Dashboard: false, 社員管理: false, 活動管理: false, 公告管理: false, 報名管理: false, 幹部管理: false, 權限管理: false, 系統設定: false },
   },
 ];
 

@@ -131,7 +131,7 @@ export class EventsAdminPage {
 
   private blankEvent(): Event {
     return {
-      id: 0,
+      id: '',
       title: '',
       cover: 'linear-gradient(135deg, #2563eb, #14b8a6)',
       description: '',
@@ -144,7 +144,7 @@ export class EventsAdminPage {
       category: '',
       tags: [],
       status: 'draft',
-      createdBy: 3,
+      createdBy: '',
       createdAt: new Date().toISOString(),
     };
   }

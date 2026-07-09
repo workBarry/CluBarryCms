@@ -22,10 +22,10 @@ export class AuthService {
       }
     }
 
-    effect(() => {
+    effect((onCleanup) => {
       const fbUser = this.firebase.currentFirebaseUser();
       if (fbUser) {
-        this.firebase.getUser(fbUser.uid).subscribe({
+        const sub = this.firebase.getUser(fbUser.uid).subscribe({
           next: (userData) => {
             if (userData) {
               const authUser: AuthUser = {
@@ -37,6 +37,16 @@ export class AuthService {
               };
               this.currentUser.set(authUser);
               localStorage.setItem('admin_user', JSON.stringify(authUser));
+            } else {
+              const fallback: AuthUser = {
+                id: fbUser.uid,
+                name: fbUser.displayName || fbUser.email!.split('@')[0],
+                email: fbUser.email!,
+                avatar: fbUser.email!.slice(0, 2).toUpperCase(),
+                role: 'Admin',
+              };
+              this.currentUser.set(fallback);
+              localStorage.setItem('admin_user', JSON.stringify(fallback));
             }
           },
           error: () => {
@@ -51,10 +61,15 @@ export class AuthService {
             localStorage.setItem('admin_user', JSON.stringify(fallback));
           },
         });
+        onCleanup(() => sub.unsubscribe());
       }
     });
 
-
+    effect(() => {
+      if (this.currentUser() && this.router.url === '/login') {
+        this.router.navigate(['/dashboard']);
+      }
+    });
   }
 
   get isAuthenticated(): boolean {
@@ -63,6 +78,11 @@ export class AuthService {
 
   get isAdmin(): boolean {
     return this.currentUser()?.role === 'Admin';
+  }
+
+  get isStaff(): boolean {
+    const role = this.currentUser()?.role;
+    return role !== undefined && role !== 'Member';
   }
 
   async login(email: string, password: string): Promise<void> {
@@ -77,8 +97,8 @@ export class AuthService {
     }
   }
 
-  logout(): void {
-    this.firebase.logout();
+  async logout(): Promise<void> {
+    await this.firebase.logout();
     this.currentUser.set(null);
     localStorage.removeItem('admin_user');
     this.router.navigate(['/login']);

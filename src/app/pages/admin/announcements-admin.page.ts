@@ -93,13 +93,13 @@ export class AnnouncementsAdminPage {
 
   private blankAnnouncement(): Announcement {
     return {
-      id: 0,
+      id: '',
       title: '',
       content: '',
       cover: 'linear-gradient(135deg, #0f766e, #22c55e)',
       isPinned: false,
       status: 'draft',
-      createdBy: 3,
+      createdBy: '',
       createdAt: new Date().toISOString(),
     };
   }

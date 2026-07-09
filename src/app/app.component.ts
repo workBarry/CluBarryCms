@@ -3,6 +3,7 @@ import { Component, effect, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from './services/auth.service';
 import { AdminDataService } from './services/admin-data.service';
+import { FirebaseService } from './services/firebase.service';
 
 @Component({
   selector: 'app-root',
@@ -13,6 +14,8 @@ import { AdminDataService } from './services/admin-data.service';
 export class AppComponent {
   readonly auth = inject(AuthService);
   private readonly data = inject(AdminDataService);
+  private readonly firebase = inject(FirebaseService);
+  private synced = false;
 
   readonly navItems = [
     { label: 'Dashboard', path: '/dashboard', icon: 'D' },
@@ -27,8 +30,14 @@ export class AppComponent {
 
   constructor() {
     effect(() => {
-      if (this.auth.currentUser()) {
-        this.data.syncFromFirebase();
+      const fbUser = this.firebase.currentFirebaseUser();
+      if (fbUser) {
+        if (!this.synced) {
+          this.synced = true;
+          this.data.syncFromFirebase();
+        }
+      } else {
+        this.synced = false;
       }
     });
   }

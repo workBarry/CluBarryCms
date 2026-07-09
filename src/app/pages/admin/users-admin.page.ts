@@ -13,7 +13,7 @@ import { User, UserRole, UserStatus } from '../../types/admin.models';
         <span class="eyebrow">Users</span>
         <h1>社員管理</h1>
       </div>
-      <button class="btn primary" type="button" (click)="openCreate()">新增社員</button>
+      
     </section>
 
     <section class="toolbar">
@@ -66,7 +66,7 @@ import { User, UserRole, UserStatus } from '../../types/admin.models';
 
     <section class="modal-backdrop" *ngIf="modalOpen">
       <form class="modal form-grid" (ngSubmit)="save()">
-        <h2>{{ draft.id ? '修改社員' : '新增社員' }}</h2>
+        <h2>修改社員</h2>
         <label>姓名<input name="name" [(ngModel)]="draft.name" /></label>
         <label>Email<input type="email" name="email" [(ngModel)]="draft.email" /></label>
         <label>電話<input name="phone" [(ngModel)]="draft.phone" /></label>
@@ -101,7 +101,7 @@ export class UsersAdminPage {
   page = 1;
   pageSize = 5;
   modalOpen = false;
-  draft = this.blankUser();
+  draft: User = this.emptyDraft;
 
   get filteredUsers(): User[] {
     const keyword = this.keyword.trim().toLowerCase();
@@ -124,9 +124,8 @@ export class UsersAdminPage {
     return this.filteredUsers.slice(start, start + this.pageSize);
   }
 
-  openCreate(): void {
-    this.draft = this.blankUser();
-    this.modalOpen = true;
+  private get emptyDraft(): User {
+    return { id: '', avatar: '', name: '', studentId: '', department: '', grade: '', email: '', phone: '', role: 'Member', status: 'pending', createdAt: '' };
   }
 
   openEdit(user: User): void {
@@ -135,32 +134,7 @@ export class UsersAdminPage {
   }
 
   save(): void {
-    this.data.upsertUser({ ...this.draft, avatar: this.initials(this.draft.name) });
+    this.data.upsertUser(this.draft);
     this.modalOpen = false;
-  }
-
-  private blankUser(): User {
-    return {
-      id: 0,
-      avatar: 'NU',
-      name: '',
-      studentId: '',
-      department: '',
-      grade: '',
-      email: '',
-      phone: '',
-      role: 'Member',
-      status: 'pending',
-      createdAt: new Date().toISOString(),
-    };
-  }
-
-  private initials(value: string): string {
-    return value
-      .split(/\s+/)
-      .map((part) => part[0])
-      .join('')
-      .slice(0, 2)
-      .toUpperCase() || 'NU';
   }
 }
