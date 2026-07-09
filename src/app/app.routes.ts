@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard, adminGuard } from './services/auth.guard';
+import { authGuard, adminGuard, loginGuard } from './services/auth.guard';
 import { AdminLoginPage } from './pages/admin/admin-login.page';
 import { AnnouncementsAdminPage } from './pages/admin/announcements-admin.page';
 import { DashboardPage } from './pages/admin/dashboard.page';
@@ -11,7 +11,7 @@ import { SettingsAdminPage } from './pages/admin/settings-admin.page';
 import { UsersAdminPage } from './pages/admin/users-admin.page';
 
 export const routes: Routes = [
-  { path: 'login', component: AdminLoginPage, title: 'Club MS - 後台登入' },
+  { path: 'login', component: AdminLoginPage, title: 'Club MS - 後台登入', canActivate: [loginGuard] },
   { path: 'dashboard', component: DashboardPage, title: 'Club MS - Dashboard', canActivate: [authGuard] },
   { path: 'users', component: UsersAdminPage, title: 'Club MS - 社員管理', canActivate: [authGuard] },
   { path: 'events', component: EventsAdminPage, title: 'Club MS - 活動管理', canActivate: [authGuard] },

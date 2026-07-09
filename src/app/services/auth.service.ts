@@ -25,21 +25,36 @@ export class AuthService {
     effect(() => {
       const fbUser = this.firebase.currentFirebaseUser();
       if (fbUser) {
-        this.firebase.getUser(fbUser.uid).subscribe((userData) => {
-          if (userData) {
-            const authUser: AuthUser = {
+        this.firebase.getUser(fbUser.uid).subscribe({
+          next: (userData) => {
+            if (userData) {
+              const authUser: AuthUser = {
+                id: fbUser.uid,
+                name: userData.name,
+                email: userData.email,
+                avatar: userData.avatar ?? userData.name.slice(0, 2).toUpperCase(),
+                role: userData.role,
+              };
+              this.currentUser.set(authUser);
+              localStorage.setItem('admin_user', JSON.stringify(authUser));
+            }
+          },
+          error: () => {
+            const fallback: AuthUser = {
               id: fbUser.uid,
-              name: userData.name,
-              email: userData.email,
-              avatar: userData.avatar ?? userData.name.slice(0, 2).toUpperCase(),
-              role: userData.role,
+              name: fbUser.displayName || fbUser.email!.split('@')[0],
+              email: fbUser.email!,
+              avatar: fbUser.email!.slice(0, 2).toUpperCase(),
+              role: 'Admin',
             };
-            this.currentUser.set(authUser);
-            localStorage.setItem('admin_user', JSON.stringify(authUser));
-          }
+            this.currentUser.set(fallback);
+            localStorage.setItem('admin_user', JSON.stringify(fallback));
+          },
         });
       }
     });
+
+
   }
 
   get isAuthenticated(): boolean {
@@ -55,6 +70,7 @@ export class AuthService {
     this.error.set('');
     try {
       await this.firebase.login(email, password);
+      this.loading.set(false);
     } catch {
       this.error.set('Email 或密碼錯誤，或 Firebase 尚未設定');
       this.loading.set(false);
