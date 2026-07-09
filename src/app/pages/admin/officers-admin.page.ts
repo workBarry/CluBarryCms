@@ -2,50 +2,26 @@ import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AdminDataService } from '../../services/admin-data.service';
-import { User, UserRole } from '../../types/admin.models';
+import { ClubContextService } from '../../services/club-context.service';
+import { ClubMember, RoleInClub, User } from '../../types/admin.models';
 
 @Component({
   selector: 'app-officers-admin-page',
   imports: [CommonModule, FormsModule],
   styles: [`
-    .member-selector {
-      display: grid;
-      gap: 1rem;
-    }
+    .member-selector { display: grid; gap: 1rem; }
     .member-list {
-      display: grid;
-      gap: 0.5rem;
-      max-height: 24rem;
-      overflow: auto;
-      border: 1px solid var(--line);
-      border-radius: 0.45rem;
-      padding: 0.5rem;
+      display: grid; gap: 0.5rem; max-height: 24rem; overflow: auto;
+      border: 1px solid var(--line); border-radius: 0.45rem; padding: 0.5rem;
     }
     .member-row {
-      display: grid;
-      grid-template-columns: auto auto 1fr auto;
-      gap: 0.65rem;
-      align-items: center;
-      padding: 0.45rem 0.65rem;
-      border-radius: 0.35rem;
-      cursor: pointer;
+      display: grid; grid-template-columns: auto auto 1fr auto; gap: 0.65rem;
+      align-items: center; padding: 0.45rem 0.65rem; border-radius: 0.35rem; cursor: pointer;
     }
-    .member-row:hover {
-      background: var(--hover);
-    }
-    .member-row .avatar {
-      width: 2rem;
-      height: 2rem;
-      font-size: 0.75rem;
-    }
-    .member-row input[type="checkbox"] {
-      width: auto;
-      min-height: auto;
-    }
-    .muted {
-      color: var(--muted);
-      font-size: 0.875rem;
-    }
+    .member-row:hover { background: var(--hover); }
+    .member-row .avatar { width: 2rem; height: 2rem; font-size: 0.75rem; }
+    .member-row input[type="checkbox"] { width: auto; min-height: auto; }
+    .muted { color: var(--muted); font-size: 0.875rem; }
   `],
   template: `
     <section class="page-title with-action">
@@ -53,35 +29,40 @@ import { User, UserRole } from '../../types/admin.models';
         <span class="eyebrow">Officers</span>
         <h1>幹部管理</h1>
       </div>
-      <button class="btn primary" type="button" *ngIf="data.hasPermission('幹部管理')" (click)="openAddOfficer()">新增幹部</button>
+      <button class="btn primary" type="button" *ngIf="data.hasPermission('幹部管理')" (click)="openAdd()">新增成員</button>
     </section>
 
-    <section class="table-card">
+    <p class="notice" *ngIf="!clubContext.selectedClubId()">請先從右上角選擇社團。</p>
+
+    <section class="table-card" *ngIf="clubContext.selectedClubId()">
       <table>
         <thead>
           <tr>
             <th>姓名</th>
             <th>Email</th>
-            <th>職位</th>
+            <th>社團內職位</th>
             <th>狀態</th>
             <th>功能</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let officer of officers">
-            <td><span class="avatar">{{ officer.avatar }}</span>{{ officer.name }}</td>
-            <td>{{ officer.email }}</td>
+          <tr *ngFor="let row of rows">
+            <td><span class="avatar">{{ row.user?.avatar }}</span>{{ row.user?.name }}</td>
+            <td>{{ row.user?.email }}</td>
             <td>
-              <select [(ngModel)]="officer.role" (ngModelChange)="saveOfficer(officer)">
-                <option *ngFor="let role of officerRoles" [value]="role">{{ role }}</option>
+              <select [(ngModel)]="row.member.roleInClub" (ngModelChange)="saveRole(row.member)">
+                <option *ngFor="let role of roles" [value]="role">{{ role }}</option>
               </select>
             </td>
-            <td><span class="status">{{ officer.status }}</span></td>
+            <td><span class="status">{{ row.member.status }}</span></td>
             <td class="actions" *ngIf="data.hasPermission('幹部管理')">
-              <button type="button" (click)="saveOfficer(officer)">修改</button>
-              <button type="button" (click)="suspend(officer)">停權</button>
-              <button type="button" (click)="message = officer.name + ' 的權限可至權限管理調整。'">設定權限</button>
+              <button type="button" (click)="saveRole(row.member)">修改</button>
+              <button type="button" (click)="suspend(row.member)">停權</button>
+              <button type="button" class="danger" (click)="remove(row.member)">移除</button>
             </td>
+          </tr>
+          <tr *ngIf="rows.length === 0">
+            <td colspan="5" class="empty">尚無成員</td>
           </tr>
         </tbody>
       </table>
@@ -89,27 +70,27 @@ import { User, UserRole } from '../../types/admin.models';
     </section>
 
     <section class="modal-backdrop" *ngIf="modalOpen">
-      <form class="modal member-selector" (ngSubmit)="addOfficers()">
-        <h2>新增幹部</h2>
-        <label>搜尋社員<input type="search" [(ngModel)]="search" name="search" placeholder="輸入姓名或 Email" /></label>
+      <form class="modal member-selector" (ngSubmit)="add()">
+        <h2>新增社團成員</h2>
+        <label>搜尋使用者<input type="search" [(ngModel)]="search" name="search" placeholder="輸入姓名或 Email" /></label>
         <label>指派職位
           <select name="targetRole" [(ngModel)]="targetRole">
-            <option *ngFor="let role of officerRoles" [value]="role">{{ role }}</option>
+            <option *ngFor="let role of roles" [value]="role">{{ role }}</option>
           </select>
         </label>
         <div class="member-list">
-          <label class="member-row" *ngFor="let member of filteredMembers">
-            <input type="checkbox" [checked]="selectedIds.has(member.id)" (change)="toggleMember(member.id)" />
-            <span class="avatar">{{ member.avatar }}</span>
-            <span>{{ member.name }}</span>
-            <span class="muted">{{ member.email }}</span>
+          <label class="member-row" *ngFor="let user of filteredCandidates">
+            <input type="checkbox" [checked]="selectedIds.has(user.id)" (change)="toggle(user.id)" />
+            <span class="avatar">{{ user.avatar }}</span>
+            <span>{{ user.name }}</span>
+            <span class="muted">{{ user.email }}</span>
           </label>
-          <p class="muted" *ngIf="filteredMembers.length === 0">沒有符合的社員</p>
+          <p class="muted" *ngIf="filteredCandidates.length === 0">沒有可加入的使用者</p>
         </div>
         <div class="modal-actions">
           <button class="btn ghost" type="button" (click)="modalOpen = false">取消</button>
           <button class="btn primary" type="submit" [disabled]="selectedIds.size === 0">
-            將 {{ selectedIds.size }} 人設為幹部
+            加入 {{ selectedIds.size }} 人
           </button>
         </div>
       </form>
@@ -118,60 +99,68 @@ import { User, UserRole } from '../../types/admin.models';
 })
 export class OfficersAdminPage {
   readonly data = inject(AdminDataService);
-  readonly officerRoles: UserRole[] = ['Activity Leader', 'Vice President', 'Admin'];
+  readonly clubContext = inject(ClubContextService);
+  readonly roles: RoleInClub[] = ['President', 'Officer', 'Member'];
   message = '';
   modalOpen = false;
   search = '';
-  targetRole: UserRole = 'Activity Leader';
+  targetRole: RoleInClub = 'Member';
   selectedIds = new Set<string>();
 
-  get officers(): User[] {
-    return this.data.users().filter((user) => user.role !== 'Member');
+  get rows(): { member: ClubMember; user?: User }[] {
+    const clubId = this.clubContext.selectedClubId();
+    return this.data
+      .clubMembers()
+      .filter((m) => m.clubId === clubId)
+      .map((member) => ({ member, user: this.data.users().find((u) => u.id === member.userId) }));
   }
 
-  get members(): User[] {
-    return this.data.users().filter((user) => user.role === 'Member');
+  get candidates(): User[] {
+    const clubId = this.clubContext.selectedClubId();
+    const existing = new Set(this.data.clubMembers().filter((m) => m.clubId === clubId).map((m) => m.userId));
+    return this.data.users().filter((u) => !existing.has(u.id));
   }
 
-  get filteredMembers(): User[] {
+  get filteredCandidates(): User[] {
     const keyword = this.search.trim().toLowerCase();
-    return this.members.filter((m) => !keyword || `${m.name} ${m.email}`.toLowerCase().includes(keyword));
+    return this.candidates.filter((u) => !keyword || `${u.name} ${u.email}`.toLowerCase().includes(keyword));
   }
 
-  openAddOfficer(): void {
+  openAdd(): void {
     this.search = '';
-    this.targetRole = 'Activity Leader';
+    this.targetRole = 'Member';
     this.selectedIds.clear();
     this.modalOpen = true;
   }
 
-  toggleMember(id: string): void {
-    if (this.selectedIds.has(id)) {
-      this.selectedIds.delete(id);
-    } else {
-      this.selectedIds.add(id);
-    }
+  toggle(id: string): void {
+    if (this.selectedIds.has(id)) this.selectedIds.delete(id);
+    else this.selectedIds.add(id);
   }
 
-  addOfficers(): void {
+  add(): void {
+    const clubId = this.clubContext.selectedClubId();
+    if (!clubId) return;
     for (const id of this.selectedIds) {
-      const member = this.members.find((m) => m.id === id);
-      if (member) {
-        this.data.upsertUser({ ...member, role: this.targetRole, status: 'active' });
-      }
+      this.data.addClubMember({ userId: id, clubId, roleInClub: this.targetRole, status: 'active', joinedAt: new Date().toISOString() });
     }
-    this.message = `已將 ${this.selectedIds.size} 位社員設為 ${this.targetRole}`;
+    this.message = `已加入 ${this.selectedIds.size} 位成員（${this.targetRole}）`;
     this.selectedIds.clear();
     this.modalOpen = false;
   }
 
-  saveOfficer(user: User): void {
-    this.data.upsertUser({ ...user });
-    this.message = `${user.name} 的幹部資料已更新。`;
+  saveRole(member: ClubMember): void {
+    this.data.updateClubMemberRole(member.id, member.roleInClub);
+    this.message = `成員職位已更新為 ${member.roleInClub}。`;
   }
 
-  suspend(user: User): void {
-    this.data.upsertUser({ ...user, status: 'suspended' });
-    this.message = `${user.name} 已停權。`;
+  suspend(member: ClubMember): void {
+    this.data.suspendClubMember(member.id);
+    this.message = '該成員已停權。';
+  }
+
+  remove(member: ClubMember): void {
+    this.data.removeClubMember(member.id);
+    this.message = '已將成員移出社團。';
   }
 }

@@ -2,7 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { FirebaseService } from './firebase.service';
 import { AuthService } from './auth.service';
-import { Announcement, ClubSettings, Event, PermissionGroup, PermissionKey, PermissionLog, PERMISSION_KEYS, Registration, User, UserRole } from '../types/admin.models';
+import { Announcement, Club, ClubMember, ClubSettings, Event, PermissionGroup, PermissionKey, PermissionLog, PERMISSION_KEYS, Registration, Session, User, UserRole } from '../types/admin.models';
 
 @Injectable({ providedIn: 'root' })
 export class AdminDataService {
@@ -15,6 +15,9 @@ export class AdminDataService {
   readonly announcements = signal<Announcement[]>([]);
   readonly permissions = signal<PermissionGroup[]>([]);
   readonly permissionLogs = signal<PermissionLog[]>([]);
+  readonly clubs = signal<Club[]>([]);
+  readonly clubMembers = signal<ClubMember[]>([]);
+  readonly sessions = signal<Session[]>([]);
   readonly settings = signal<ClubSettings>({
     logo: 'CM',
     clubName: 'Club Management System',
@@ -29,7 +32,7 @@ export class AdminDataService {
 
   async syncFromFirebase(): Promise<void> {
     try {
-      const [fbUsers, fbEvents, fbRegs, fbAnnouncements, fbPermissions, fbSettings, fbPermissionLogs] = await Promise.all([
+      const [fbUsers, fbEvents, fbRegs, fbAnnouncements, fbPermissions, fbSettings, fbPermissionLogs, fbClubs, fbClubMembers, fbSessions] = await Promise.all([
         firstValueFrom(this.firebase.watchUsers()),
         firstValueFrom(this.firebase.watchEvents()),
         firstValueFrom(this.firebase.watchRegistrations()),
@@ -37,6 +40,9 @@ export class AdminDataService {
         firstValueFrom(this.firebase.watchPermissions()),
         firstValueFrom(this.firebase.watchSettings()),
         firstValueFrom(this.firebase.watchPermissionLogs()),
+        firstValueFrom(this.firebase.watchClubs()),
+        firstValueFrom(this.firebase.watchAllClubMembers()),
+        firstValueFrom(this.firebase.watchSessions()),
       ]);
 
       if (fbUsers) this.users.set(fbUsers as User[]);
@@ -46,6 +52,9 @@ export class AdminDataService {
       if (fbPermissions) this.permissions.set(fbPermissions as PermissionGroup[]);
       if (fbSettings) this.settings.set(fbSettings as ClubSettings);
       if (fbPermissionLogs) this.permissionLogs.set(fbPermissionLogs as PermissionLog[]);
+      if (fbClubs) this.clubs.set(fbClubs as Club[]);
+      if (fbClubMembers) this.clubMembers.set(fbClubMembers as ClubMember[]);
+      if (fbSessions) this.sessions.set(fbSessions as Session[]);
 
       this.ready.set(true);
     } catch {
@@ -208,5 +217,78 @@ export class AdminDataService {
 
   findEvent(id: string): Event | undefined {
     return this.events().find((event) => event.id === id);
+  }
+
+  // --- Clubs ---
+  upsertClub(club: Club): void {
+    const existing = this.clubs().find((item) => item.id === club.id);
+    if (existing) {
+      this.clubs.update((items) => items.map((item) => (item.id === club.id ? club : item)));
+      this.firebase.updateClub(club.id, club);
+    } else {
+      const { id, ...rest } = club;
+      this.firebase.createClub(rest).then((ref) => {
+        this.clubs.update((items) => [{ ...club, id: ref.id }, ...items]);
+      });
+    }
+  }
+
+  updateClubStatus(id: string, status: Club['status']): void {
+    this.clubs.update((items) => items.map((item) => (item.id === id ? { ...item, status } : item)));
+    this.firebase.updateClub(id, { status });
+  }
+
+  removeClub(id: string): void {
+    this.clubs.update((items) => items.filter((item) => item.id !== id));
+    this.firebase.deleteClub(id);
+  }
+
+  // --- Club Members ---
+  addClubMember(member: Omit<ClubMember, 'id'>): void {
+    this.firebase.createClubMember(member).then((ref) => {
+      this.clubMembers.update((items) => [{ ...member, id: ref.id }, ...items]);
+    });
+  }
+
+  updateClubMemberRole(id: string, roleInClub: ClubMember['roleInClub']): void {
+    this.clubMembers.update((items) => items.map((item) => (item.id === id ? { ...item, roleInClub } : item)));
+    this.firebase.updateClubMember(id, { roleInClub });
+  }
+
+  suspendClubMember(id: string): void {
+    this.clubMembers.update((items) => items.map((item) => (item.id === id ? { ...item, status: 'suspended' } : item)));
+    this.firebase.updateClubMember(id, { status: 'suspended' });
+  }
+
+  removeClubMember(id: string): void {
+    this.clubMembers.update((items) => items.filter((item) => item.id !== id));
+    this.firebase.deleteClubMember(id);
+  }
+
+  // --- Sessions ---
+  upsertSession(session: Session): void {
+    const existing = this.sessions().find((item) => item.id === session.id);
+    if (existing) {
+      this.sessions.update((items) => items.map((item) => (item.id === session.id ? session : item)));
+      this.firebase.updateSession(session.id, session);
+    } else {
+      const { id, ...rest } = session;
+      this.firebase.createSession(rest).then((ref) => {
+        this.sessions.update((items) => [{ ...session, id: ref.id }, ...items]);
+      });
+    }
+  }
+
+  toggleSessionOpen(id: string): void {
+    this.sessions.update((items) =>
+      items.map((item) => (item.id === id ? { ...item, status: item.status === 'open' ? 'closed' : 'open' } : item)),
+    );
+    const session = this.sessions().find((s) => s.id === id);
+    if (session) this.firebase.updateSession(id, { status: session.status });
+  }
+
+  removeSession(id: string): void {
+    this.sessions.update((items) => items.filter((item) => item.id !== id));
+    this.firebase.deleteSession(id);
   }
 }

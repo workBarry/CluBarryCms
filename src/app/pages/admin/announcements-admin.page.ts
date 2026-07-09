@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AdminDataService } from '../../services/admin-data.service';
+import { ClubContextService } from '../../services/club-context.service';
 import { Announcement, AnnouncementStatus } from '../../types/admin.models';
 
 @Component({
@@ -28,7 +29,7 @@ import { Announcement, AnnouncementStatus } from '../../types/admin.models';
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let item of data.announcements()">
+           <tr *ngFor="let item of announcements">
             <td>
               <strong>{{ item.title }}</strong>
               <small>{{ item.content }}</small>
@@ -71,10 +72,16 @@ import { Announcement, AnnouncementStatus } from '../../types/admin.models';
 })
 export class AnnouncementsAdminPage {
   readonly data = inject(AdminDataService);
+  readonly clubContext = inject(ClubContextService);
   readonly statuses: AnnouncementStatus[] = ['draft', 'published'];
 
   modalOpen = false;
   draft = this.blankAnnouncement();
+
+  get announcements(): Announcement[] {
+    const clubId = this.clubContext.selectedClubId();
+    return clubId ? this.data.announcements().filter((a) => a.clubId === clubId) : this.data.announcements();
+  }
 
   openCreate(): void {
     this.draft = this.blankAnnouncement();
@@ -94,6 +101,7 @@ export class AnnouncementsAdminPage {
   private blankAnnouncement(): Announcement {
     return {
       id: '',
+      clubId: this.clubContext.selectedClubId() || null,
       title: '',
       content: '',
       cover: 'linear-gradient(135deg, #0f766e, #22c55e)',

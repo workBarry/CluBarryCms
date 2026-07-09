@@ -12,7 +12,7 @@ import {
 } from 'firebase/auth';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { Announcement, ClubSettings, Event, PermissionGroup, PermissionLog, Registration, User } from '../types/admin.models';
+import { Announcement, Club, ClubMember, ClubSettings, Event, PermissionGroup, PermissionLog, Registration, Session, User } from '../types/admin.models';
 
 @Injectable({ providedIn: 'root' })
 export class FirebaseService {
@@ -103,6 +103,11 @@ export class FirebaseService {
     return this.snapshotObservable<Event>(q);
   }
 
+  watchEventsByClub(clubId: string): Observable<Event[]> {
+    const q = query(collection(this.firestore, 'events'), where('clubId', '==', clubId), orderBy('createdAt', 'desc'));
+    return this.snapshotObservable<Event>(q);
+  }
+
   getEvent(id: string): Observable<Event | undefined> {
     return this.docObservable<Event>(doc(this.firestore, `events/${id}`));
   }
@@ -133,6 +138,16 @@ export class FirebaseService {
     return this.snapshotObservable<Registration>(q);
   }
 
+  watchRegistrationsByClub(clubId: string): Observable<Registration[]> {
+    const q = query(collection(this.firestore, 'registrations'), where('clubId', '==', clubId));
+    return this.snapshotObservable<Registration>(q);
+  }
+
+  watchRegistrationsBySession(sessionId: string): Observable<Registration[]> {
+    const q = query(collection(this.firestore, 'registrations'), where('sessionId', '==', sessionId));
+    return this.snapshotObservable<Registration>(q);
+  }
+
   createRegistration(data: Omit<Registration, 'id'>): Promise<DocumentReference> {
     return addDoc(collection(this.firestore, 'registrations'), { ...data, createdAt: Timestamp.now() });
   }
@@ -144,6 +159,11 @@ export class FirebaseService {
   // --- Announcements ---
   watchAnnouncements(): Observable<Announcement[]> {
     const q = query(collection(this.firestore, 'announcements'), orderBy('createdAt', 'desc'));
+    return this.snapshotObservable<Announcement>(q);
+  }
+
+  watchAnnouncementsByClub(clubId: string): Observable<Announcement[]> {
+    const q = query(collection(this.firestore, 'announcements'), where('clubId', '==', clubId), orderBy('createdAt', 'desc'));
     return this.snapshotObservable<Announcement>(q);
   }
 
@@ -165,6 +185,86 @@ export class FirebaseService {
 
   deleteAnnouncement(id: string): Promise<void> {
     return deleteDoc(doc(this.firestore, `announcements/${id}`));
+  }
+
+  // --- Clubs ---
+  watchClubs(): Observable<Club[]> {
+    const q = query(collection(this.firestore, 'clubs'), orderBy('createdAt', 'desc'));
+    return this.snapshotObservable<Club>(q);
+  }
+
+  getClub(id: string): Observable<Club | undefined> {
+    return this.docObservable<Club>(doc(this.firestore, `clubs/${id}`));
+  }
+
+  createClub(data: Omit<Club, 'id'>): Promise<DocumentReference> {
+    return addDoc(collection(this.firestore, 'clubs'), { ...data, createdAt: Timestamp.now() });
+  }
+
+  setClub(id: string, data: Omit<Club, 'id'>): Promise<void> {
+    return setDoc(doc(this.firestore, `clubs/${id}`), { ...data, createdAt: Timestamp.now() });
+  }
+
+  updateClub(id: string, data: Partial<Club>): Promise<void> {
+    return setDoc(doc(this.firestore, `clubs/${id}`), data, { merge: true });
+  }
+
+  deleteClub(id: string): Promise<void> {
+    return deleteDoc(doc(this.firestore, `clubs/${id}`));
+  }
+
+  // --- Club Members ---
+  watchClubMembers(clubId: string): Observable<ClubMember[]> {
+    const q = query(collection(this.firestore, 'clubMembers'), where('clubId', '==', clubId));
+    return this.snapshotObservable<ClubMember>(q);
+  }
+
+  watchAllClubMembers(): Observable<ClubMember[]> {
+    return this.snapshotObservable<ClubMember>(collection(this.firestore, 'clubMembers'));
+  }
+
+  watchClubMembersByUser(userId: string): Observable<ClubMember[]> {
+    const q = query(collection(this.firestore, 'clubMembers'), where('userId', '==', userId));
+    return this.snapshotObservable<ClubMember>(q);
+  }
+
+  createClubMember(data: Omit<ClubMember, 'id'>): Promise<DocumentReference> {
+    return addDoc(collection(this.firestore, 'clubMembers'), { ...data, joinedAt: Timestamp.now() });
+  }
+
+  updateClubMember(id: string, data: Partial<ClubMember>): Promise<void> {
+    return setDoc(doc(this.firestore, `clubMembers/${id}`), data, { merge: true });
+  }
+
+  deleteClubMember(id: string): Promise<void> {
+    return deleteDoc(doc(this.firestore, `clubMembers/${id}`));
+  }
+
+  // --- Sessions ---
+  watchSessions(): Observable<Session[]> {
+    return this.snapshotObservable<Session>(collection(this.firestore, 'sessions'));
+  }
+
+  watchSessionsByEvent(eventId: string): Observable<Session[]> {
+    const q = query(collection(this.firestore, 'sessions'), where('eventId', '==', eventId));
+    return this.snapshotObservable<Session>(q);
+  }
+
+  watchSessionsByClub(clubId: string): Observable<Session[]> {
+    const q = query(collection(this.firestore, 'sessions'), where('clubId', '==', clubId));
+    return this.snapshotObservable<Session>(q);
+  }
+
+  createSession(data: Omit<Session, 'id'>): Promise<DocumentReference> {
+    return addDoc(collection(this.firestore, 'sessions'), { ...data, createdAt: Timestamp.now() });
+  }
+
+  updateSession(id: string, data: Partial<Session>): Promise<void> {
+    return setDoc(doc(this.firestore, `sessions/${id}`), data, { merge: true });
+  }
+
+  deleteSession(id: string): Promise<void> {
+    return deleteDoc(doc(this.firestore, `sessions/${id}`));
   }
 
   // --- Permissions ---

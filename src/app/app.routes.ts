@@ -2,19 +2,23 @@ import { Routes } from '@angular/router';
 import { authGuard, adminGuard, loginGuard, permissionGuard } from './services/auth.guard';
 import { AdminLoginPage } from './pages/admin/admin-login.page';
 import { AnnouncementsAdminPage } from './pages/admin/announcements-admin.page';
+import { ClubsAdminPage } from './pages/admin/clubs-admin.page';
 import { DashboardPage } from './pages/admin/dashboard.page';
 import { EventsAdminPage } from './pages/admin/events-admin.page';
 import { OfficersAdminPage } from './pages/admin/officers-admin.page';
 import { PermissionsAdminPage } from './pages/admin/permissions-admin.page';
 import { RegistrationsAdminPage } from './pages/admin/registrations-admin.page';
+import { SessionsAdminPage } from './pages/admin/sessions-admin.page';
 import { SettingsAdminPage } from './pages/admin/settings-admin.page';
 import { UsersAdminPage } from './pages/admin/users-admin.page';
 
 export const routes: Routes = [
   { path: 'login', component: AdminLoginPage, title: 'Club MS - 後台登入', canActivate: [loginGuard] },
   { path: 'dashboard', component: DashboardPage, title: 'Club MS - Dashboard', canActivate: [authGuard] },
+  { path: 'clubs', component: ClubsAdminPage, title: 'Club MS - 社團管理', canActivate: [permissionGuard('社團管理')] },
   { path: 'users', component: UsersAdminPage, title: 'Club MS - 社員管理', canActivate: [permissionGuard('社員管理')] },
   { path: 'events', component: EventsAdminPage, title: 'Club MS - 活動管理', canActivate: [permissionGuard('活動管理')] },
+  { path: 'sessions', component: SessionsAdminPage, title: 'Club MS - 場次管理', canActivate: [permissionGuard('活動管理')] },
   { path: 'announcements', component: AnnouncementsAdminPage, title: 'Club MS - 公告管理', canActivate: [permissionGuard('公告管理')] },
   { path: 'registrations', component: RegistrationsAdminPage, title: 'Club MS - 報名管理', canActivate: [permissionGuard('報名管理')] },
   { path: 'officers', component: OfficersAdminPage, title: 'Club MS - 幹部管理', canActivate: [permissionGuard('幹部管理')] },

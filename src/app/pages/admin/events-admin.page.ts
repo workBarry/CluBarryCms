@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AdminDataService } from '../../services/admin-data.service';
+import { ClubContextService } from '../../services/club-context.service';
 import { Event, EventStatus } from '../../types/admin.models';
 
 @Component({
@@ -89,6 +90,7 @@ import { Event, EventStatus } from '../../types/admin.models';
 })
 export class EventsAdminPage {
   readonly data = inject(AdminDataService);
+  readonly clubContext = inject(ClubContextService);
   readonly statuses: EventStatus[] = ['draft', 'published', 'closed', 'completed'];
 
   keyword = '';
@@ -99,8 +101,10 @@ export class EventsAdminPage {
   draft = this.blankEvent();
 
   get filteredEvents(): Event[] {
+    const clubId = this.clubContext.selectedClubId();
     const keyword = this.keyword.trim().toLowerCase();
     return this.data.events().filter((event) => {
+      if (clubId && event.clubId !== clubId) return false;
       const matchKeyword = !keyword || `${event.title} ${event.location} ${event.category}`.toLowerCase().includes(keyword);
       const matchStatus = this.status === 'all' || event.status === this.status;
       return matchKeyword && matchStatus;
@@ -132,9 +136,11 @@ export class EventsAdminPage {
   private blankEvent(): Event {
     return {
       id: '',
+      clubId: this.clubContext.selectedClubId(),
       title: '',
       cover: 'linear-gradient(135deg, #2563eb, #14b8a6)',
       description: '',
+      agenda: [],
       location: '',
       startTime: '',
       endTime: '',

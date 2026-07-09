@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AdminDataService } from '../../services/admin-data.service';
+import { ClubContextService } from '../../services/club-context.service';
 
 @Component({
   selector: 'app-registrations-admin-page',
@@ -62,15 +63,18 @@ import { AdminDataService } from '../../services/admin-data.service';
 })
 export class RegistrationsAdminPage {
   readonly data = inject(AdminDataService);
+  readonly clubContext = inject(ClubContextService);
 
   keyword = '';
   status = 'all';
   message = '';
 
   get rows() {
+    const clubId = this.clubContext.selectedClubId();
     const keyword = this.keyword.trim().toLowerCase();
     return this.data
       .registrations()
+      .filter((r) => !clubId || r.clubId === clubId)
       .map((registration) => ({
         registration,
         user: this.data.findUser(registration.userId),

@@ -25,6 +25,13 @@
         <strong>社團管理系統</strong>
       </div>
       <div class="topbar-right">
+        <label class="club-select" *ngIf="manageableClubs().length > 0">
+          社團
+          <select [value]="clubContext.selectedClubId()" (change)="onSelectClub($any($event.target).value)">
+            <option value="">— 選擇社團 —</option>
+            <option *ngFor="let club of manageableClubs()" [value]="club.id">{{ club.name }}</option>
+          </select>
+        </label>
         <span class="user-info">
           <span class="avatar">{{ auth.currentUser()?.avatar }}</span>
           <span>{{ auth.currentUser()?.name }} ({{ auth.currentUser()?.role }})</span>
