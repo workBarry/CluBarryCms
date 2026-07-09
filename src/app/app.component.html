@@ -1,0 +1,42 @@
+<div class="admin-shell" *ngIf="auth.currentUser(); else loginView">
+  <aside class="sidebar">
+    <a class="brand" routerLink="/dashboard">
+      <span class="brand-mark">CM</span>
+      <div>
+        <strong>Club MS</strong>
+        <small>管理後台</small>
+      </div>
+    </a>
+
+    <nav class="side-nav" aria-label="後台導覽">
+      <a *ngFor="let item of navItems" [routerLink]="item.path" routerLinkActive="active">
+        <span>{{ item.icon }}</span>
+        {{ item.label }}
+      </a>
+    </nav>
+  </aside>
+
+  <section class="workspace">
+    <header class="topbar">
+      <div>
+        <span class="eyebrow">Admin Console</span>
+        <strong>社團管理系統</strong>
+      </div>
+      <div class="topbar-right">
+        <span class="user-info">
+          <span class="avatar">{{ auth.currentUser()?.avatar }}</span>
+          <span>{{ auth.currentUser()?.name }} ({{ auth.currentUser()?.role }})</span>
+        </span>
+        <a class="btn ghost" (click)="auth.logout()" style="cursor:pointer">登出</a>
+      </div>
+    </header>
+
+    <main>
+      <router-outlet />
+    </main>
+  </section>
+</div>
+
+<ng-template #loginView>
+  <router-outlet />
+</ng-template>
