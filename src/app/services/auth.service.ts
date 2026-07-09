@@ -1,28 +1,18 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, inject, effect } from '@angular/core';
 import { Router } from '@angular/router';
-import { User, UserRole } from '../types/admin.models';
-
-export interface AuthUser {
-  id: number;
-  name: string;
-  email: string;
-  avatar: string;
-  role: UserRole;
-}
+import { FirebaseService } from './firebase.service';
+import { AuthUser } from './auth.types';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
+  private readonly firebase = inject(FirebaseService);
+  private readonly router = inject(Router);
+
   readonly currentUser = signal<AuthUser | null>(null);
   readonly loading = signal(false);
   readonly error = signal('');
 
-  private readonly mockUsers: AuthUser[] = [
-    { id: 3, name: 'Kevin Wu', email: 'kevin@example.com', avatar: 'KW', role: 'Admin' },
-    { id: 5, name: 'Peter Jiang', email: 'peter@example.com', avatar: 'PJ', role: 'Vice President' },
-    { id: 2, name: 'Amy Lin', email: 'amy@example.com', avatar: 'AL', role: 'Activity Leader' },
-  ];
-
-  constructor(private readonly router: Router) {
+  constructor() {
     const saved = localStorage.getItem('admin_user');
     if (saved) {
       try {
@@ -31,6 +21,25 @@ export class AuthService {
         localStorage.removeItem('admin_user');
       }
     }
+
+    effect(() => {
+      const fbUser = this.firebase.currentFirebaseUser();
+      if (fbUser) {
+        this.firebase.getUser(fbUser.uid).subscribe((userData) => {
+          if (userData) {
+            const authUser: AuthUser = {
+              id: fbUser.uid,
+              name: userData.name,
+              email: userData.email,
+              avatar: userData.avatar ?? userData.name.slice(0, 2).toUpperCase(),
+              role: userData.role,
+            };
+            this.currentUser.set(authUser);
+            localStorage.setItem('admin_user', JSON.stringify(authUser));
+          }
+        });
+      }
+    });
   }
 
   get isAuthenticated(): boolean {
@@ -41,24 +50,19 @@ export class AuthService {
     return this.currentUser()?.role === 'Admin';
   }
 
-  login(email: string, password: string): void {
+  async login(email: string, password: string): Promise<void> {
     this.loading.set(true);
     this.error.set('');
-
-    setTimeout(() => {
-      const user = this.mockUsers.find((u) => u.email === email);
-      if (user && password === 'password') {
-        this.currentUser.set(user);
-        localStorage.setItem('admin_user', JSON.stringify(user));
-        this.router.navigate(['/dashboard']);
-      } else {
-        this.error.set('Email 或密碼錯誤');
-      }
+    try {
+      await this.firebase.login(email, password);
+    } catch {
+      this.error.set('Email 或密碼錯誤，或 Firebase 尚未設定');
       this.loading.set(false);
-    }, 600);
+    }
   }
 
   logout(): void {
+    this.firebase.logout();
     this.currentUser.set(null);
     localStorage.removeItem('admin_user');
     this.router.navigate(['/login']);

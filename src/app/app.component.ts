@@ -1,7 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from './services/auth.service';
+import { AdminDataService } from './services/admin-data.service';
 
 @Component({
   selector: 'app-root',
@@ -9,8 +10,9 @@ import { AuthService } from './services/auth.service';
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
-export class AppComponent {
+export class AppComponent implements OnInit {
   readonly auth = inject(AuthService);
+  private readonly data = inject(AdminDataService);
 
   readonly navItems = [
     { label: 'Dashboard', path: '/dashboard', icon: 'D' },
@@ -22,4 +24,8 @@ export class AppComponent {
     { label: '權限管理', path: '/permissions', icon: 'P' },
     { label: '系統設定', path: '/settings', icon: 'S' },
   ];
+
+  ngOnInit(): void {
+    this.data.syncFromFirebase();
+  }
 }
