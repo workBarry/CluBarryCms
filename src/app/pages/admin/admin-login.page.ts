@@ -15,9 +15,9 @@ import { Spinner } from '../../components/ui/spinner.component';
         <p>登入後可管理社員、活動、公告、報名、幹部、權限與系統設定。</p>
         <div class="mock-hint">
           <strong>測試帳號</strong>
-          <span>kevin@example.com / password (Admin)</span>
-          <span>peter@example.com / password (Vice President)</span>
-          <span>amy@example.com / password (Activity Leader)</span>
+          @for (account of mockAccounts; track account) {
+            <span>{{ account }}</span>
+          }
         </div>
       </div>
       <form class="form-card" (ngSubmit)="submit()">
@@ -50,6 +50,12 @@ export class AdminLoginPage {
   readonly auth = inject(AuthService);
   email = 'kevin@example.com';
   password = 'password';
+
+  readonly mockAccounts = [
+    'kevin&#64;example.com / password (Admin)',
+    'peter&#64;example.com / password (Vice President)',
+    'amy&#64;example.com / password (Activity Leader)',
+  ];
 
   submit(): void {
     this.auth.login(this.email, this.password);
