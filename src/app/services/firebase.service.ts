@@ -12,7 +12,7 @@ import {
 } from 'firebase/auth';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { Announcement, ClubSettings, Event, PermissionGroup, Registration, User } from '../types/admin.models';
+import { Announcement, ClubSettings, Event, PermissionGroup, PermissionLog, Registration, User } from '../types/admin.models';
 
 @Injectable({ providedIn: 'root' })
 export class FirebaseService {
@@ -174,6 +174,19 @@ export class FirebaseService {
 
   updatePermission(id: string, data: Partial<PermissionGroup>): Promise<void> {
     return setDoc(doc(this.firestore, `permissions/${id}`), data, { merge: true });
+  }
+
+  createPermission(group: PermissionGroup): Promise<void> {
+    return setDoc(doc(this.firestore, `permissions/${group.role}`), group);
+  }
+
+  watchPermissionLogs(): Observable<PermissionLog[]> {
+    const q = query(collection(this.firestore, 'permissionLogs'), orderBy('createdAt', 'desc'));
+    return this.snapshotObservable<PermissionLog>(q);
+  }
+
+  addPermissionLog(log: Omit<PermissionLog, 'id'>): Promise<DocumentReference> {
+    return addDoc(collection(this.firestore, 'permissionLogs'), log);
   }
 
   // --- Settings ---

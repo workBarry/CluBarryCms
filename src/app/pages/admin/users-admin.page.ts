@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AdminDataService } from '../../services/admin-data.service';
-import { User, UserRole, UserStatus } from '../../types/admin.models';
+import { User, UserRole, UserStatus, PERMISSION_KEYS, PermissionKey } from '../../types/admin.models';
 
 @Component({
   selector: 'app-users-admin-page',
@@ -50,7 +50,7 @@ import { User, UserRole, UserStatus } from '../../types/admin.models';
             <td>{{ user.email }}</td>
             <td><span class="pill">{{ user.role }}</span></td>
             <td><span class="status">{{ user.status }}</span></td>
-            <td class="actions">
+            <td class="actions" *ngIf="data.hasPermission('社員管理')">
               <button type="button" (click)="openEdit(user)">修改</button>
               <button type="button" class="danger" (click)="data.deleteUser(user.id)">刪除</button>
             </td>
@@ -82,6 +82,13 @@ import { User, UserRole, UserStatus } from '../../types/admin.models';
             <option *ngFor="let item of statuses" [value]="item">{{ item }}</option>
           </select>
         </label>
+        <fieldset class="override-fieldset">
+          <legend>權限例外（覆蓋角色預設）</legend>
+          <label class="override-row" *ngFor="let key of permissionKeys">
+            <input type="checkbox" [checked]="draft.permissionsOverride?.[key]" (change)="toggleOverride(key, $any($event.target).checked)" />
+            {{ key }}
+          </label>
+        </fieldset>
         <div class="modal-actions">
           <button class="btn ghost" type="button" (click)="modalOpen = false">取消</button>
           <button class="btn primary" type="submit">儲存</button>
@@ -94,6 +101,7 @@ export class UsersAdminPage {
   readonly data = inject(AdminDataService);
   readonly roles: UserRole[] = ['Member', 'Activity Leader', 'Vice President', 'Admin'];
   readonly statuses: UserStatus[] = ['active', 'pending', 'suspended'];
+  readonly permissionKeys = PERMISSION_KEYS;
 
   keyword = '';
   status = 'all';
@@ -129,8 +137,12 @@ export class UsersAdminPage {
   }
 
   openEdit(user: User): void {
-    this.draft = { ...user };
+    this.draft = { ...user, permissionsOverride: { ...user.permissionsOverride } };
     this.modalOpen = true;
+  }
+
+  toggleOverride(key: PermissionKey, value: boolean): void {
+    this.draft.permissionsOverride = { ...this.draft.permissionsOverride, [key]: value };
   }
 
   save(): void {

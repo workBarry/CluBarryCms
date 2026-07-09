@@ -53,7 +53,7 @@ import { User, UserRole } from '../../types/admin.models';
         <span class="eyebrow">Officers</span>
         <h1>幹部管理</h1>
       </div>
-      <button class="btn primary" type="button" (click)="openAddOfficer()">新增幹部</button>
+      <button class="btn primary" type="button" *ngIf="data.hasPermission('幹部管理')" (click)="openAddOfficer()">新增幹部</button>
     </section>
 
     <section class="table-card">
@@ -77,7 +77,7 @@ import { User, UserRole } from '../../types/admin.models';
               </select>
             </td>
             <td><span class="status">{{ officer.status }}</span></td>
-            <td class="actions">
+            <td class="actions" *ngIf="data.hasPermission('幹部管理')">
               <button type="button" (click)="saveOfficer(officer)">修改</button>
               <button type="button" (click)="suspend(officer)">停權</button>
               <button type="button" (click)="message = officer.name + ' 的權限可至權限管理調整。'">設定權限</button>

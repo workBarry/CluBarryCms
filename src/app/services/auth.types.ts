@@ -1,4 +1,4 @@
-import { UserRole } from '../types/admin.models';
+import { PermissionKey, UserRole } from '../types/admin.models';
 
 export interface AuthUser {
   id: string;
@@ -6,4 +6,5 @@ export interface AuthUser {
   email: string;
   avatar: string;
   role: UserRole;
+  permissionsOverride?: Partial<Record<PermissionKey, boolean>>;
 }

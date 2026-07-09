@@ -16,6 +16,7 @@ export interface User {
   phone: string;
   role: UserRole;
   status: UserStatus;
+  permissionsOverride?: Partial<Record<PermissionKey, boolean>>;
   createdAt: string;
 }
 
@@ -82,6 +83,16 @@ export const PERMISSION_KEYS: PermissionKey[] = [
 export interface PermissionGroup {
   role: UserRole;
   permissions: Record<PermissionKey, boolean>;
+}
+
+export interface PermissionLog {
+  id?: string;
+  action: 'update' | 'create';
+  role: string;
+  permission?: string;
+  value?: boolean;
+  actor: string;
+  createdAt: string;
 }
 
 export interface ClubSettings {

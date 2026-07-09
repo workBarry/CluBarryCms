@@ -34,6 +34,7 @@ export class AuthService {
                 email: userData.email,
                 avatar: userData.avatar ?? userData.name.slice(0, 2).toUpperCase(),
                 role: userData.role,
+                permissionsOverride: userData.permissionsOverride,
               };
               this.currentUser.set(authUser);
               localStorage.setItem('admin_user', JSON.stringify(authUser));

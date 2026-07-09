@@ -2,7 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { FirebaseService } from './firebase.service';
 import { AuthService } from './auth.service';
-import { Announcement, ClubSettings, Event, PermissionGroup, Registration, User } from '../types/admin.models';
+import { Announcement, ClubSettings, Event, PermissionGroup, PermissionKey, PermissionLog, PERMISSION_KEYS, Registration, User, UserRole } from '../types/admin.models';
 
 @Injectable({ providedIn: 'root' })
 export class AdminDataService {
@@ -14,6 +14,7 @@ export class AdminDataService {
   readonly registrations = signal<Registration[]>([]);
   readonly announcements = signal<Announcement[]>([]);
   readonly permissions = signal<PermissionGroup[]>([]);
+  readonly permissionLogs = signal<PermissionLog[]>([]);
   readonly settings = signal<ClubSettings>({
     logo: 'CM',
     clubName: 'Club Management System',
@@ -28,13 +29,14 @@ export class AdminDataService {
 
   async syncFromFirebase(): Promise<void> {
     try {
-      const [fbUsers, fbEvents, fbRegs, fbAnnouncements, fbPermissions, fbSettings] = await Promise.all([
+      const [fbUsers, fbEvents, fbRegs, fbAnnouncements, fbPermissions, fbSettings, fbPermissionLogs] = await Promise.all([
         firstValueFrom(this.firebase.watchUsers()),
         firstValueFrom(this.firebase.watchEvents()),
         firstValueFrom(this.firebase.watchRegistrations()),
         firstValueFrom(this.firebase.watchAnnouncements()),
         firstValueFrom(this.firebase.watchPermissions()),
         firstValueFrom(this.firebase.watchSettings()),
+        firstValueFrom(this.firebase.watchPermissionLogs()),
       ]);
 
       if (fbUsers) this.users.set(fbUsers as User[]);
@@ -43,6 +45,7 @@ export class AdminDataService {
       if (fbAnnouncements) this.announcements.set(fbAnnouncements as Announcement[]);
       if (fbPermissions) this.permissions.set(fbPermissions as PermissionGroup[]);
       if (fbSettings) this.settings.set(fbSettings as ClubSettings);
+      if (fbPermissionLogs) this.permissionLogs.set(fbPermissionLogs as PermissionLog[]);
 
       this.ready.set(true);
     } catch {
@@ -159,7 +162,7 @@ export class AdminDataService {
     this.persist('update', 'registrations', id, patch);
   }
 
-  setPermission(role: string, permission: string, value: boolean): void {
+  setPermission(role: string, permission: PermissionKey, value: boolean): void {
     this.permissions.update((groups) =>
       groups.map((group) =>
         group.role === role ? { ...group, permissions: { ...group.permissions, [permission]: value } } : group,
@@ -167,13 +170,31 @@ export class AdminDataService {
     );
     const group = this.permissions().find((g) => g.role === role);
     if (group) this.firebase.updatePermission(role, { permissions: group.permissions });
+    this.logChange('update', role, permission, value);
   }
 
-  hasPermission(permission: string): boolean {
+  createRole(role: string): void {
+    const group: PermissionGroup = {
+      role: role as UserRole,
+      permissions: PERMISSION_KEYS.reduce((acc, key) => ({ ...acc, [key]: false }), {} as Record<PermissionKey, boolean>),
+    };
+    this.permissions.update((groups) => [...groups, group]);
+    this.firebase.createPermission(group);
+    this.logChange('create', role);
+  }
+
+  hasPermission(permission: PermissionKey): boolean {
     const user = this.auth.currentUser();
     if (!user) return false;
+    const override = user.permissionsOverride?.[permission];
+    if (override !== undefined) return override;
     const group = this.permissions().find((g) => g.role === user.role);
     return group?.permissions[permission] ?? false;
+  }
+
+  private logChange(action: PermissionLog['action'], role: string, permission?: PermissionKey, value?: boolean): void {
+    const actor = this.auth.currentUser()?.name ?? 'system';
+    this.firebase.addPermissionLog({ action, role, permission, value, actor, createdAt: new Date().toISOString() });
   }
 
   updateSettings(value: ClubSettings): void {

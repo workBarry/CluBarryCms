@@ -9,10 +9,12 @@
     </a>
 
     <nav class="side-nav" aria-label="後台導覽">
-      <a *ngFor="let item of navItems" [routerLink]="item.path" routerLinkActive="active">
-        <span>{{ item.icon }}</span>
-        {{ item.label }}
-      </a>
+      <ng-container *ngFor="let item of navItems">
+        <a *ngIf="canView(item)" [routerLink]="item.path" routerLinkActive="active">
+          <span>{{ item.icon }}</span>
+          {{ item.label }}
+        </a>
+      </ng-container>
     </nav>
   </aside>
 
