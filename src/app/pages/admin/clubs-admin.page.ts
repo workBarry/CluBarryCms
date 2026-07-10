@@ -30,7 +30,7 @@ import { Club, ClubStatus } from '../../types/admin.models';
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let club of manageableClubs">
+          <tr *ngFor="let club of manageableClubs; trackBy: trackByClubId">
             <td>
               <strong>{{ club.name }}</strong>
               <div class="muted">{{ club.description }}</div>
@@ -79,13 +79,20 @@ export class ClubsAdminPage {
 
   get manageableClubs(): Club[] {
     const all = this.data.clubs();
-    if (this.auth.isAdmin) return all;
+    // 去重：避免同 id 重複
+    const unique = new Map<string, Club>();
+    for (const club of all) {
+      if (!unique.has(club.id)) unique.set(club.id, club);
+    }
+    const deduped = Array.from(unique.values());
+
+    if (this.auth.isAdmin) return deduped;
     const myIds = new Set(
       this.data.clubMembers()
         .filter((m) => m.userId === this.auth.currentUser()?.id && m.roleInClub !== 'Member' && m.status === 'active')
         .map((m) => m.clubId),
     );
-    return all.filter((c) => myIds.has(c.id));
+    return deduped.filter((c) => myIds.has(c.id));
   }
 
   statusLabel(status: ClubStatus): string {
@@ -121,5 +128,9 @@ export class ClubsAdminPage {
   enter(club: Club): void {
     this.clubContext.selectClub(club.id);
     this.router.navigate(['/dashboard']);
+  }
+
+  trackByClubId(index: number, club: Club): string {
+    return club.id;
   }
 }
