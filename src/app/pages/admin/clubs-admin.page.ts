@@ -50,14 +50,17 @@ import { Club, ClubStatus } from '../../types/admin.models';
       </table>
     </section>
 
+    <p class="notice" *ngIf="message">{{ message }}</p>
+
     <section class="modal-backdrop" *ngIf="creating">
       <form class="modal form-grid" (ngSubmit)="create()">
         <h2>新增社團</h2>
         <label>名稱<input name="name" [(ngModel)]="draft.name" required /></label>
         <label>分類<input name="category" [(ngModel)]="draft.category" /></label>
         <label>簡介<textarea name="description" [(ngModel)]="draft.description"></textarea></label>
+        <p class="notice" *ngIf="error">{{ error }}</p>
         <div class="modal-actions">
-          <button class="btn ghost" type="button" (click)="creating = false">取消</button>
+          <button class="btn ghost" type="button" (click)="creating = false; error = ''">取消</button>
           <button class="btn primary" type="submit">建立（待審核）</button>
         </div>
       </form>
@@ -75,6 +78,8 @@ export class ClubsAdminPage {
   private readonly router = inject(Router);
 
   creating = false;
+  message = '';
+  error = '';
   draft: Partial<Club> = { name: '', category: '', description: '' };
 
   get manageableClubs(): Club[] {
@@ -105,10 +110,17 @@ export class ClubsAdminPage {
   }
 
   create(): void {
+    const name = this.draft.name?.trim();
+    if (!name) return;
+    const exists = this.data.clubs().some((c) => c.name === name);
+    if (exists) {
+      this.error = `社團「${name}」已存在`;
+      return;
+    }
     const uid = this.auth.currentUser()?.id ?? 'system';
     this.data.upsertClub({
-      name: this.draft.name?.trim() ?? '',
-      logo: (this.draft.name ?? '社').trim().charAt(0),
+      name,
+      logo: name.trim().charAt(0),
       cover: 'linear-gradient(135deg, #2563eb, #14b8a6)',
       description: this.draft.description?.trim() ?? '',
       category: this.draft.category?.trim() ?? '',
@@ -118,6 +130,7 @@ export class ClubsAdminPage {
       createdAt: new Date().toISOString(),
     });
     this.creating = false;
+    this.error = '';
   }
 
   setStatus(club: Club, status: ClubStatus): void {

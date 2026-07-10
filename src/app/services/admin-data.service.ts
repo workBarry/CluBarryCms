@@ -226,6 +226,11 @@ export class AdminDataService {
       this.clubs.update((items) => items.map((item) => (item.id === club.id ? club as Club : item)));
       this.firebase.updateClub(club.id, club as Club);
     } else {
+      const nameExists = !club.id && this.clubs().some((c) => c.name === club.name);
+      if (nameExists) {
+        console.warn(`Club "${club.name}" already exists`);
+        return;
+      }
       const { id, ...rest } = club;
       this.firebase.createClub(rest as Omit<Club, 'id'>).then((ref) => {
         this.clubs.update((items) => [{ ...rest, id: ref.id } as Club, ...items]);
