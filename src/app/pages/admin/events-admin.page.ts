@@ -110,7 +110,7 @@ export class EventsAdminPage {
   get activeClubs(): Club[] {
     const seen = new Set<string>();
     return this.data.clubs().filter((c) => {
-      if (c.status !== 'active' || seen.has(c.name)) return false;
+      if (seen.has(c.name)) return false;
       seen.add(c.name);
       return true;
     });
