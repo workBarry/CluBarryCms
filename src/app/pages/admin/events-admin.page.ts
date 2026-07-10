@@ -3,7 +3,7 @@ import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AdminDataService } from '../../services/admin-data.service';
 import { ClubContextService } from '../../services/club-context.service';
-import { Event, EventStatus } from '../../types/admin.models';
+import { Club, Event, EventStatus } from '../../types/admin.models';
 
 @Component({
   selector: 'app-events-admin-page',
@@ -65,6 +65,12 @@ import { Event, EventStatus } from '../../types/admin.models';
     <section class="modal-backdrop" *ngIf="modalOpen">
       <form class="modal form-grid" (ngSubmit)="save()">
         <h2>{{ draft.id ? '修改活動' : '新增活動' }}</h2>
+        <label class="wide">所屬社團
+          <select name="clubId" [(ngModel)]="draft.clubId">
+            <option value="">— 選擇社團 —</option>
+            <option *ngFor="let club of data.clubs()" [value]="club.id">{{ club.name }}</option>
+          </select>
+        </label>
         <label class="wide">標題<input name="title" [(ngModel)]="draft.title" /></label>
         <label class="wide">內容<textarea name="description" [(ngModel)]="draft.description"></textarea></label>
         <label>開始日期<input type="datetime-local" name="startTime" [(ngModel)]="draft.startTime" /></label>
@@ -95,6 +101,7 @@ export class EventsAdminPage {
 
   keyword = '';
   status = 'all';
+
   modalOpen = false;
   message = '';
   tagText = '';
