@@ -220,20 +220,21 @@ export class AdminDataService {
   }
 
   // --- Clubs ---
-  upsertClub(club: Club): void {
-    const existing = this.clubs().find((item) => item.id === club.id);
-    if (existing) {
-      this.clubs.update((items) => items.map((item) => (item.id === club.id ? club : item)));
-      this.firebase.updateClub(club.id, club);
+  upsertClub(club: Partial<Club> & { name: string }): void {
+    const existing = club.id ? this.clubs().find((item) => item.id === club.id) : undefined;
+    if (existing && club.id) {
+      this.clubs.update((items) => items.map((item) => (item.id === club.id ? club as Club : item)));
+      this.firebase.updateClub(club.id, club as Club);
     } else {
       const { id, ...rest } = club;
-      this.firebase.createClub(rest).then((ref) => {
-        this.clubs.update((items) => [{ ...club, id: ref.id }, ...items]);
+      this.firebase.createClub(rest as Omit<Club, 'id'>).then((ref) => {
+        this.clubs.update((items) => [{ ...rest, id: ref.id } as Club, ...items]);
       });
     }
   }
 
   updateClubStatus(id: string, status: Club['status']): void {
+    if (!id) return;
     this.clubs.update((items) => items.map((item) => (item.id === id ? { ...item, status } : item)));
     this.firebase.updateClub(id, { status });
   }

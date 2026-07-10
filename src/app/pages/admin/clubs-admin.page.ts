@@ -107,7 +107,6 @@ export class ClubsAdminPage {
   create(): void {
     const uid = this.auth.currentUser()?.id ?? 'system';
     this.data.upsertClub({
-      id: '',
       name: this.draft.name?.trim() ?? '',
       logo: (this.draft.name ?? '社').trim().charAt(0),
       cover: 'linear-gradient(135deg, #2563eb, #14b8a6)',
@@ -122,6 +121,7 @@ export class ClubsAdminPage {
   }
 
   setStatus(club: Club, status: ClubStatus): void {
+    if (!club.id) return;
     this.data.updateClubStatus(club.id, status);
   }
 
