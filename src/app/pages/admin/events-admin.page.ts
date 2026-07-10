@@ -68,7 +68,7 @@ import { Club, Event, EventStatus } from '../../types/admin.models';
         <label class="wide">所屬社團
           <select name="clubId" [(ngModel)]="draft.clubId">
             <option value="">— 選擇社團 —</option>
-            <option *ngFor="let club of data.clubs()" [value]="club.id">{{ club.name }}</option>
+            <option *ngFor="let club of activeClubs" [value]="club.id">{{ club.name }}</option>
           </select>
         </label>
         <label class="wide">標題<input name="title" [(ngModel)]="draft.title" /></label>
@@ -106,6 +106,15 @@ export class EventsAdminPage {
   message = '';
   tagText = '';
   draft = this.blankEvent();
+
+  get activeClubs(): Club[] {
+    const seen = new Set<string>();
+    return this.data.clubs().filter((c) => {
+      if (c.status !== 'active' || seen.has(c.name)) return false;
+      seen.add(c.name);
+      return true;
+    });
+  }
 
   get filteredEvents(): Event[] {
     const clubId = this.clubContext.selectedClubId();
