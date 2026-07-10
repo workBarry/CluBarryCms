@@ -33,6 +33,8 @@ export class AppComponent {
     { label: '系統設定', path: '/settings', icon: 'S', perm: '系統設定' },
   ];
 
+  sidebarOpen = false;
+
   canView(item: { perm: PermissionKey | null }): boolean {
     if (this.auth.isAdmin) return true;
     return item.perm === null ? this.auth.isStaff : this.data.hasPermission(item.perm);
@@ -49,6 +51,11 @@ export class AppComponent {
 
   onSelectClub(id: string): void {
     this.clubContext.selectClub(id);
+    this.sidebarOpen = false;
+  }
+
+  toggleSidebar(): void {
+    this.sidebarOpen = !this.sidebarOpen;
   }
 
   constructor() {

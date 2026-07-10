@@ -1,5 +1,5 @@
 <div class="admin-shell" *ngIf="auth.currentUser(); else loginView">
-  <aside class="sidebar">
+  <aside class="sidebar" [class.open]="sidebarOpen" (click)="sidebarOpen = false">
     <a class="brand" routerLink="/dashboard">
       <span class="brand-mark">CM</span>
       <div>
@@ -10,7 +10,7 @@
 
     <nav class="side-nav" aria-label="後台導覽">
       <ng-container *ngFor="let item of navItems">
-        <a *ngIf="canView(item)" [routerLink]="item.path" routerLinkActive="active">
+        <a *ngIf="canView(item)" [routerLink]="item.path" routerLinkActive="active" (click)="sidebarOpen = false">
           <span>{{ item.icon }}</span>
           {{ item.label }}
         </a>
@@ -18,9 +18,16 @@
     </nav>
   </aside>
 
+  <div class="sidebar-overlay" [class.visible]="sidebarOpen" (click)="sidebarOpen = false"></div>
+
   <section class="workspace">
     <header class="topbar">
       <div>
+        <button class="menu-toggle" (click)="toggleSidebar()" aria-label="切換選單">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 12h18M3 6h18M3 18h18" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
         <span class="eyebrow">Admin Console</span>
         <strong>社團管理系統</strong>
       </div>
