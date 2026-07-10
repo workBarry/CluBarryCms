@@ -42,11 +42,18 @@ export class AppComponent {
 
   readonly manageableClubs = (): Club[] => {
     const all = this.data.clubs();
-    if (this.auth.isAdmin) return all;
+    // 去重：避免同 id 重複
+    const unique = new Map<string, Club>();
+    for (const club of all) {
+      if (!unique.has(club.id)) unique.set(club.id, club);
+    }
+    const deduped = Array.from(unique.values());
+
+    if (this.auth.isAdmin) return deduped;
     const myIds = new Set(
       this.data.clubMembers().filter((m) => m.userId === this.auth.currentUser()?.id && m.roleInClub !== 'Member' && m.status === 'active').map((m) => m.clubId),
     );
-    return all.filter((c) => myIds.has(c.id));
+    return deduped.filter((c) => myIds.has(c.id));
   };
 
   onSelectClub(id: string): void {
