@@ -1,7 +1,13 @@
 <div class="admin-shell" *ngIf="auth.currentUser(); else loginView">
-  <aside class="sidebar" [class.open]="sidebarOpen" (click)="sidebarOpen = false">
+  <aside class="sidebar" [class.open]="sidebarOpen">
     <a class="brand" routerLink="/dashboard">
-      <span class="brand-mark">CM</span>
+      <img
+        *ngIf="config.settings().logo; else logoFallback"
+        class="brand-logo"
+        [src]="config.settings().logo"
+        [alt]="config.settings().clubName + ' Logo'"
+      />
+      <ng-template #logoFallback><span class="brand-mark">C</span></ng-template>
       <div>
         <strong>Club MS</strong>
         <small>管理後台</small>
@@ -9,7 +15,7 @@
     </a>
 
     <nav class="side-nav" aria-label="後台導覽">
-      <ng-container *ngFor="let item of navItems">
+      <ng-container *ngFor="let item of navItems; trackBy: trackNav">
         <a *ngIf="canView(item)" [routerLink]="item.path" routerLinkActive="active" (click)="sidebarOpen = false">
           <span>{{ item.icon }}</span>
           {{ item.label }}
@@ -22,21 +28,22 @@
 
   <section class="workspace">
 <header class="topbar">
-      <button class="menu-toggle" (click)="toggleSidebar()" aria-label="切換選單">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M3 12h18M3 6h18M3 18h18" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
-      <div>
-        <span class="eyebrow">Admin Console</span>
-        <strong>社團管理系統</strong>
+      <div class="topbar-left">
+        <button class="menu-toggle" (click)="toggleSidebar()" aria-label="切換選單">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 12h18M3 6h18M3 18h18" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <div>
+          <span class="eyebrow">Admin Console</span>
+          <strong>社團管理系統</strong>
+        </div>
       </div>
       <div class="topbar-right">
-        <label class="club-select" *ngIf="manageableClubs().length > 0">
-          社團
+        <label class="club-select" *ngIf="clubs.manageableClubs().length > 0">
           <select [value]="clubContext.selectedClubId()" (change)="onSelectClub($any($event.target).value)">
             <option value="">— 選擇社團 —</option>
-            <option *ngFor="let club of manageableClubs()" [value]="club.id">{{ club.name }}</option>
+            <option *ngFor="let club of clubs.manageableClubs(); trackBy: trackClub" [value]="club.id">{{ club.name }}</option>
           </select>
         </label>
         <span class="user-info">

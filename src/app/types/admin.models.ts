@@ -44,6 +44,23 @@ export interface Event {
   createdAt: string;
 }
 
+export interface CreateEventInput {
+  clubId: string;
+  title: string;
+  cover: string;
+  description: string;
+  agenda: string[];
+  location: string;
+  startTime: string;
+  endTime: string;
+  deadline: string;
+  capacity: number;
+  category: string;
+  tags: string[];
+}
+
+export type UpdateEventInput = Partial<CreateEventInput>;
+
 export interface Registration {
   id: string;
   userId: string;
@@ -61,6 +78,7 @@ export interface Announcement {
   clubId: string | null;
   title: string;
   content: string;
+  attachmentUrl?: string;
   cover: string;
   isPinned: boolean;
   status: AnnouncementStatus;
@@ -129,7 +147,7 @@ export const PERMISSION_KEYS: PermissionKey[] = [
 ];
 
 export interface PermissionGroup {
-  role: UserRole;
+  role: string;
   permissions: Record<PermissionKey, boolean>;
 }
 

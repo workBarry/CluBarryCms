@@ -6,7 +6,7 @@ import { statusLabel } from '../../utils';
   selector: 'app-status-badge',
   standalone: true,
   imports: [CommonModule],
-  template: `<span class="status-badge" [class]="variant">{{ label }}</span>`,
+  template: `<span class="status-badge" [ngClass]="variant">{{ label }}</span>`,
   styles: [
     `
       .status-badge {

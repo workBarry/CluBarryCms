@@ -22,8 +22,8 @@ export const routes: Routes = [
   { path: 'announcements', component: AnnouncementsAdminPage, title: 'Club MS - 公告管理', canActivate: [permissionGuard('公告管理')] },
   { path: 'registrations', component: RegistrationsAdminPage, title: 'Club MS - 報名管理', canActivate: [permissionGuard('報名管理')] },
   { path: 'officers', component: OfficersAdminPage, title: 'Club MS - 幹部管理', canActivate: [permissionGuard('幹部管理')] },
-  { path: 'permissions', component: PermissionsAdminPage, title: 'Club MS - 權限管理', canActivate: [permissionGuard('權限管理')] },
-  { path: 'settings', component: SettingsAdminPage, title: 'Club MS - 系統設定', canActivate: [permissionGuard('系統設定')] },
+  { path: 'permissions', component: PermissionsAdminPage, title: 'Club MS - 權限管理', canActivate: [adminGuard] },
+  { path: 'settings', component: SettingsAdminPage, title: 'Club MS - 系統設定', canActivate: [adminGuard] },
   { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
   { path: '**', redirectTo: 'dashboard' },
 ];

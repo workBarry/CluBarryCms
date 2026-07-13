@@ -6,7 +6,7 @@ import { Component, Input } from '@angular/core';
   template: `
     <div class="empty">
       <strong>{{ title }}</strong>
-      <p *ngIf="description">{{ description }}</p>
+      @if (description) { <p>{{ description }}</p> }
       <ng-content></ng-content>
     </div>
   `,

@@ -2,10 +2,11 @@ import { CommonModule } from '@angular/common';
 import { Component, effect, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from './services/auth.service';
-import { AdminDataService } from './services/admin-data.service';
+import { AdminConfigService } from './services/admin-config.service';
+import { AdminSyncService } from './services/admin-sync.service';
+import { ClubDataService } from './services/club-data.service';
 import { ClubContextService } from './services/club-context.service';
-import { FirebaseService } from './services/firebase.service';
-import { Club, PermissionKey } from './types/admin.models';
+import { PermissionKey } from './types/admin.models';
 
 @Component({
   selector: 'app-root',
@@ -15,10 +16,10 @@ import { Club, PermissionKey } from './types/admin.models';
 })
 export class AppComponent {
   readonly auth = inject(AuthService);
-  private readonly data = inject(AdminDataService);
+  readonly clubs = inject(ClubDataService);
+  readonly config = inject(AdminConfigService);
   readonly clubContext = inject(ClubContextService);
-  private readonly firebase = inject(FirebaseService);
-  private synced = false;
+  private readonly sync = inject(AdminSyncService);
 
   readonly navItems: { label: string; path: string; icon: string; perm: PermissionKey | null }[] = [
     { label: 'Dashboard', path: '/dashboard', icon: 'D', perm: 'Dashboard' },
@@ -37,24 +38,16 @@ export class AppComponent {
 
   canView(item: { perm: PermissionKey | null }): boolean {
     if (this.auth.isAdmin) return true;
-    return item.perm === null ? this.auth.isStaff : this.data.hasPermission(item.perm);
+    return item.perm === null ? this.auth.isStaff : this.config.hasPermission(item.perm);
   }
 
-  readonly manageableClubs = (): Club[] => {
-    const all = this.data.clubs();
-    // 去重：避免同 id 重複
-    const unique = new Map<string, Club>();
-    for (const club of all) {
-      if (!unique.has(club.id)) unique.set(club.id, club);
-    }
-    const deduped = Array.from(unique.values());
+  trackNav(_index: number, item: { path: string }): string {
+    return item.path;
+  }
 
-    if (this.auth.isAdmin) return deduped;
-    const myIds = new Set(
-      this.data.clubMembers().filter((m) => m.userId === this.auth.currentUser()?.id && m.roleInClub !== 'Member' && m.status === 'active').map((m) => m.clubId),
-    );
-    return deduped.filter((c) => myIds.has(c.id));
-  };
+  trackClub(_index: number, club: { id: string }): string {
+    return club.id;
+  }
 
   onSelectClub(id: string): void {
     this.clubContext.selectClub(id);
@@ -67,15 +60,8 @@ export class AppComponent {
 
   constructor() {
     effect(() => {
-      const fbUser = this.firebase.currentFirebaseUser();
-      if (fbUser) {
-        if (!this.synced) {
-          this.synced = true;
-          this.data.syncFromFirebase();
-        }
-      } else {
-        this.synced = false;
-      }
+      if (this.auth.currentUser()) this.sync.start();
+      else this.sync.stop();
     });
   }
 }

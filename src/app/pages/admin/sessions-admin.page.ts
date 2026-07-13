@@ -1,131 +1,132 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { AdminDataService } from '../../services/admin-data.service';
+import { EmptyState } from '../../components/ui/empty-state.component';
+import { PageHeader } from '../../components/ui/page-header.component';
+import { StatusBadge } from '../../components/ui/status-badge.component';
 import { ClubContextService } from '../../services/club-context.service';
-import { Event, Session } from '../../types/admin.models';
+import { EventDataService } from '../../services/event-data.service';
+import { Session } from '../../types/admin.models';
 
 @Component({
   selector: 'app-sessions-admin-page',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, EmptyState, PageHeader, StatusBadge],
   template: `
-    <section class="page-title">
-      <div>
-        <span class="eyebrow">Sessions</span>
-        <h1>場次管理</h1>
-      </div>
+    <app-page-header eyebrow="Sessions" title="場次管理" />
+
+    <section class="toolbar">
+      <select [ngModel]="selectedEventId()" (ngModelChange)="selectedEventId.set($event)">
+        <option value="">全部活動</option>
+        @for (event of filteredEvents(); track event.id) {
+          <option [value]="event.id">{{ event.title }}</option>
+        }
+      </select>
     </section>
 
-    <p class="notice" *ngIf="!clubContext.selectedClubId()">請先從右上角選擇社團。</p>
-
-    <ng-container *ngIf="clubContext.selectedClubId()">
-      <section class="toolbar">
-        <select [(ngModel)]="selectedEventId">
-          <option value="">全部活動</option>
-          <option *ngFor="let ev of eventsOfClub" [value]="ev.id">{{ ev.title }}</option>
-        </select>
-      </section>
-
-      <section class="table-card">
-        <table>
-          <thead>
+    <section class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th>場次</th>
+            <th>所屬活動</th>
+            <th>時間</th>
+            <th>名額</th>
+            <th>開放非社員</th>
+            <th>狀態</th>
+            <th>功能</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (session of sessions(); track session.id) {
             <tr>
-              <th>場次</th>
-              <th>所屬活動</th>
-              <th>時間</th>
-              <th>名額</th>
-              <th>開放非社員</th>
-              <th>狀態</th>
-              <th>功能</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let s of sessions">
-              <td><strong>{{ s.title }}</strong></td>
-              <td>{{ eventTitle(s.eventId) }}</td>
-              <td>{{ s.startTime | date: 'MM/dd HH:mm' }}</td>
-              <td>{{ s.currentCount }} / {{ s.capacity }}</td>
+              <td><strong>{{ session.title }}</strong></td>
+              <td>{{ eventTitle(session.eventId) }}</td>
+              <td>{{ session.startTime | date: 'MM/dd HH:mm' }}</td>
+              <td>{{ session.currentCount }} / {{ session.capacity }}</td>
               <td>
-                <input type="checkbox" [checked]="s.openToNonMember" (change)="setOpen(s, $any($event.target).checked)" />
+                <input
+                  type="checkbox"
+                  [checked]="session.openToNonMember"
+                  (change)="setOpen(session, $any($event.target).checked)"
+                />
               </td>
-              <td><span class="status">{{ s.status === 'open' ? '報名中' : s.status === 'closed' ? '已關閉' : '已結束' }}</span></td>
+              <td><app-status-badge [value]="session.status" /></td>
               <td class="actions">
-                <button type="button" (click)="toggleOpen(s)">開關報名</button>
-                <button type="button" class="danger" (click)="remove(s)">刪除</button>
+                @if (session.status !== 'completed') {
+                  <button type="button" (click)="eventData.toggleSessionOpen(session.id)">
+                    {{ session.status === 'open' ? '關閉報名' : '開放報名' }}
+                  </button>
+                }
+                <button type="button" class="danger" (click)="eventData.removeSession(session.id)">刪除</button>
               </td>
             </tr>
-            <tr *ngIf="sessions.length === 0">
-              <td colspan="7" class="empty">尚無場次</td>
+          } @empty {
+            <tr>
+              <td colspan="7"><app-empty-state title="尚無場次" /></td>
             </tr>
-          </tbody>
-        </table>
-      </section>
+          }
+        </tbody>
+      </table>
+    </section>
 
-      <section class="table-card form-card">
-        <h2>新增場次</h2>
-        <form class="form-grid" (ngSubmit)="create()">
-          <label>活動
-            <select name="eventId" [(ngModel)]="draft.eventId" required>
-              <option value="">選擇活動</option>
-              <option *ngFor="let ev of eventsOfClub" [value]="ev.id">{{ ev.title }}</option>
-            </select>
-          </label>
-          <label>場次名稱<input name="title" [(ngModel)]="draft.title" required /></label>
-          <label>開始時間<input type="datetime-local" name="startTime" [(ngModel)]="draft.startTime" required /></label>
-          <label>結束時間<input type="datetime-local" name="endTime" [(ngModel)]="draft.endTime" required /></label>
-          <label>地點<input name="location" [(ngModel)]="draft.location" /></label>
-          <label>名額<input type="number" name="capacity" [(ngModel)]="draft.capacity" /></label>
-          <label class="checkbox">
-            <input type="checkbox" name="openToNonMember" [(ngModel)]="draft.openToNonMember" /> 開放非社員參加
-          </label>
-          <div class="modal-actions">
-            <button class="btn primary" type="submit" [disabled]="!draft.eventId || !draft.title">建立場次</button>
-          </div>
-        </form>
-      </section>
-    </ng-container>
+    <section class="table-card form-card">
+      <h2>新增場次</h2>
+      <form class="form-grid" (ngSubmit)="create()">
+        <label>活動
+          <select name="eventId" [(ngModel)]="draft.eventId" required>
+            <option value="">選擇活動</option>
+            @for (event of filteredEvents(); track event.id) {
+              <option [value]="event.id">{{ event.title }}</option>
+            }
+          </select>
+        </label>
+        <label>場次名稱<input name="title" [(ngModel)]="draft.title" required /></label>
+        <label>開始時間<input type="datetime-local" name="startTime" [(ngModel)]="draft.startTime" required /></label>
+        <label>結束時間<input type="datetime-local" name="endTime" [(ngModel)]="draft.endTime" required /></label>
+        <label>地點<input name="location" [(ngModel)]="draft.location" /></label>
+        <label>名額<input type="number" name="capacity" [(ngModel)]="draft.capacity" /></label>
+        <label class="checkbox">
+          <input type="checkbox" name="openToNonMember" [(ngModel)]="draft.openToNonMember" /> 開放非社員參加
+        </label>
+        <div class="modal-actions">
+          <button class="btn primary" type="submit" [disabled]="!draft.eventId || !draft.title">建立場次</button>
+        </div>
+      </form>
+    </section>
   `,
   styles: [`
-    .notice { color: var(--muted); }
-    .empty { text-align: center; color: var(--muted); padding: 1.5rem; }
     .form-card { margin-top: 1rem; }
     .checkbox { display: flex; gap: 0.5rem; align-items: center; }
   `],
 })
 export class SessionsAdminPage {
-  readonly data = inject(AdminDataService);
+  readonly eventData = inject(EventDataService);
   readonly clubContext = inject(ClubContextService);
-  selectedEventId = '';
-
-  draft: Partial<Session> = {
-    title: '',
-    startTime: '',
-    endTime: '',
-    location: '',
-    capacity: 30,
-    openToNonMember: false,
-  };
-
-  get eventsOfClub(): Event[] {
+  readonly selectedEventId = signal('');
+  readonly filteredEvents = computed(() => {
     const clubId = this.clubContext.selectedClubId();
-    return this.data.events().filter((e) => e.clubId === clubId);
-  }
-
-  get sessions(): Session[] {
+    return this.eventData.events().filter((event) => !clubId || event.clubId === clubId);
+  });
+  readonly sessions = computed(() => {
     const clubId = this.clubContext.selectedClubId();
-    return this.data.sessions().filter(
-      (s) => s.clubId === clubId && (!this.selectedEventId || s.eventId === this.selectedEventId),
-    );
-  }
+    const eventId = this.selectedEventId();
+    return this.eventData.sessions().filter((session) => {
+      if (clubId && session.clubId !== clubId) return false;
+      return !eventId || session.eventId === eventId;
+    });
+  });
+
+  draft: Partial<Session> = this.emptyDraft();
 
   eventTitle(eventId: string): string {
-    return this.data.events().find((e) => e.id === eventId)?.title ?? '—';
+    return this.eventData.findEvent(eventId)?.title ?? '—';
   }
 
   create(): void {
-    const clubId = this.clubContext.selectedClubId();
+    const event = this.eventData.findEvent(this.draft.eventId ?? '');
+    const clubId = event?.clubId ?? this.clubContext.selectedClubId();
     if (!clubId || !this.draft.eventId || !this.draft.title) return;
-    this.data.upsertSession({
+    this.eventData.upsertSession({
       id: '',
       eventId: this.draft.eventId,
       clubId,
@@ -139,18 +140,21 @@ export class SessionsAdminPage {
       status: 'open',
       createdAt: new Date().toISOString(),
     });
-    this.draft = { title: '', startTime: '', endTime: '', location: '', capacity: 30, openToNonMember: false };
+    this.draft = this.emptyDraft();
   }
 
-  setOpen(s: Session, value: boolean): void {
-    this.data.upsertSession({ ...s, openToNonMember: value });
+  setOpen(session: Session, openToNonMember: boolean): void {
+    this.eventData.upsertSession({ ...session, openToNonMember });
   }
 
-  toggleOpen(s: Session): void {
-    this.data.toggleSessionOpen(s.id);
-  }
-
-  remove(s: Session): void {
-    this.data.removeSession(s.id);
+  private emptyDraft(): Partial<Session> {
+    return {
+      title: '',
+      startTime: '',
+      endTime: '',
+      location: '',
+      capacity: 30,
+      openToNonMember: false,
+    };
   }
 }

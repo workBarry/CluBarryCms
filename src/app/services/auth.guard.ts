@@ -1,53 +1,42 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { AuthService } from './auth.service';
-import { AdminDataService } from './admin-data.service';
+import { AdminConfigService } from './admin-config.service';
 import { PermissionKey } from '../types/admin.models';
 
-export const loginGuard: CanActivateFn = () => {
+export const loginGuard: CanActivateFn = async () => {
   const auth = inject(AuthService);
   const router = inject(Router);
-  if (auth.isAuthenticated && auth.isStaff) {
-    router.navigate(['/dashboard']);
-    return false;
-  }
-  return true;
+  await auth.waitUntilReady();
+  return auth.isAuthenticated && auth.isStaff ? router.createUrlTree(['/dashboard']) : true;
 };
 
-export const authGuard: CanActivateFn = () => {
+export const authGuard: CanActivateFn = async () => {
   const auth = inject(AuthService);
   const router = inject(Router);
-  if (!auth.isAuthenticated || !auth.isStaff) {
-    router.navigate(['/login']);
-    return false;
-  }
-  return true;
+  await auth.waitUntilReady();
+  return auth.isAuthenticated && auth.isStaff ? true : router.createUrlTree(['/login']);
 };
 
-export const adminGuard: CanActivateFn = () => {
+export const adminGuard: CanActivateFn = async () => {
   const auth = inject(AuthService);
   const router = inject(Router);
-  if (!auth.isAuthenticated || !auth.isAdmin) {
-    router.navigate(['/dashboard']);
-    return false;
-  }
-  return true;
+  await auth.waitUntilReady();
+  if (!auth.isAuthenticated) return router.createUrlTree(['/login']);
+  return auth.isAdmin ? true : router.createUrlTree(['/dashboard']);
 };
 
 export const permissionGuard = (permission: PermissionKey): CanActivateFn => {
-  return () => {
+  return async () => {
     const auth = inject(AuthService);
-    const data = inject(AdminDataService);
+    const config = inject(AdminConfigService);
     const router = inject(Router);
+    await auth.waitUntilReady();
     if (!auth.isAuthenticated || !auth.isStaff) {
-      router.navigate(['/login']);
-      return false;
+      return router.createUrlTree(['/login']);
     }
     if (auth.isAdmin) return true;
-    if (!data.hasPermission(permission)) {
-      router.navigate(['/dashboard']);
-      return false;
-    }
-    return true;
+    await config.waitUntilPermissionsReady();
+    return config.hasPermission(permission) ? true : router.createUrlTree(['/dashboard']);
   };
 };

@@ -14,6 +14,14 @@
   transform: translateX(0);
 }
 
+.brand-logo {
+  width: 2.65rem;
+  height: 2.65rem;
+  flex: 0 0 auto;
+  border-radius: 0.75rem;
+  object-fit: cover;
+}
+
 .sidebar-overlay {
   position: fixed;
   inset: 0;
@@ -34,19 +42,6 @@
   visibility: visible;
 }
 
-@media (min-width: 769px) {
-  .sidebar {
-    position: sticky;
-    top: 0;
-    transform: none;
-    height: 100vh;
-  }
-
-  .sidebar-overlay {
-    display: none;
-  }
-}
-
 .menu-toggle {
   display: flex;
   align-items: center;
@@ -58,10 +53,4 @@
   border-radius: 0.5rem;
   color: var(--text);
   cursor: pointer;
-}
-
-@media (min-width: 769px) {
-  .menu-toggle {
-    display: none;
-  }
 }

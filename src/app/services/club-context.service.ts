@@ -1,24 +1,19 @@
-import { Injectable, inject, signal } from '@angular/core';
-import { AdminDataService } from './admin-data.service';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { ClubDataService } from './club-data.service';
 
 @Injectable({ providedIn: 'root' })
 export class ClubContextService {
-  private readonly data = inject(AdminDataService);
+  private readonly clubData = inject(ClubDataService);
   readonly selectedClubId = signal<string>('');
-
-  readonly clubs = this.data.clubs;
-  readonly clubMembers = this.data.clubMembers;
-
-  get selectedClub() {
-    return this.data.clubs().find((c) => c.id === this.selectedClubId());
-  }
+  readonly selectedClub = computed(() => (
+    this.clubData.clubs().find((club) => club.id === this.selectedClubId())
+  ));
+  readonly membersOfSelectedClub = computed(() => {
+    const clubId = this.selectedClubId();
+    return this.clubData.clubMembers().filter((member) => member.clubId === clubId);
+  });
 
   selectClub(id: string): void {
     this.selectedClubId.set(id);
-  }
-
-  membersOfSelectedClub() {
-    const clubId = this.selectedClubId();
-    return this.data.clubMembers().filter((m) => m.clubId === clubId);
   }
 }
