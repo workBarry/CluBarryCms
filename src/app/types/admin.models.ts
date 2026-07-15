@@ -106,6 +106,8 @@ export interface ClubMember {
   roleInClub: RoleInClub;
   status: ClubMemberStatus;
   joinedAt: string;
+  approvedBy?: string;
+  approvedAt?: string;
 }
 
 export interface Session {

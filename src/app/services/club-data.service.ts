@@ -98,6 +98,23 @@ export class ClubDataService {
     this.report('club member delete', this.firebase.deleteClubMember(id));
   }
 
+  approveClubMember(id: string, approverName: string): void {
+    const now = new Date().toISOString();
+    this.clubMembers.update((items) => items.map((item) => (
+      item.id === id ? { ...item, status: 'active', approvedBy: approverName, approvedAt: now } : item
+    )));
+    this.report('club member approve', this.firebase.updateClubMember(id, {
+      status: 'active',
+      approvedBy: approverName,
+      approvedAt: now,
+    }));
+  }
+
+  rejectClubMember(id: string): void {
+    this.clubMembers.update((items) => items.filter((item) => item.id !== id));
+    this.report('club member reject', this.firebase.deleteClubMember(id));
+  }
+
   private report(action: string, operation: Promise<unknown>): void {
     void operation.catch((error) => console.warn(`Firebase ${action} failed:`, error));
   }

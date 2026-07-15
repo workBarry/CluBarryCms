@@ -255,7 +255,7 @@ export class EventsAdminPage {
     return statusLabel(status);
   }
 
-  private closeModal(): void {
+  closeModal(): void {
     this.modalOpen = false;
     this.formError.set('');
   }

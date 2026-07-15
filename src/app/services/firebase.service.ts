@@ -5,6 +5,7 @@ import {
   DocumentReference,
   Firestore,
   Query,
+  QueryDocumentSnapshot,
   Timestamp,
   addDoc,
   collection,
@@ -151,12 +152,12 @@ export class FirebaseService {
     return deleteDoc(doc(this.firestore, `events/${id}`));
   }
 
-  getSessionsByEvent(eventId: string): Promise<DocumentData[]> {
+  getSessionsByEvent(eventId: string): Promise<QueryDocumentSnapshot<DocumentData>[]> {
     return getDocs(query(collection(this.firestore, 'sessions'), where('eventId', '==', eventId)))
       .then((snap) => snap.docs);
   }
 
-  getRegistrationsByEvent(eventId: string): Promise<DocumentData[]> {
+  getRegistrationsByEvent(eventId: string): Promise<QueryDocumentSnapshot<DocumentData>[]> {
     return getDocs(query(collection(this.firestore, 'registrations'), where('eventId', '==', eventId)))
       .then((snap) => snap.docs);
   }
@@ -231,6 +232,14 @@ export class FirebaseService {
 
   deleteClubMember(id: string): Promise<void> {
     return deleteDoc(doc(this.firestore, `clubMembers/${id}`));
+  }
+
+  createNotification(data: { userId: string; title: string; content: string; type: string }): Promise<DocumentReference> {
+    return addDoc(collection(this.firestore, 'notifications'), {
+      ...data,
+      isRead: false,
+      createdAt: Timestamp.now(),
+    });
   }
 
   watchSessions(): Observable<Session[]> {

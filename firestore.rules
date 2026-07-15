@@ -22,7 +22,7 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow read: if isStaff() || signedIn() && request.auth.uid == userId;
+      allow read: if isStaff() || signedIn();
       allow create: if isAdmin() || signedIn()
         && request.auth.uid == userId
         && request.resource.data.role == 'Member';
@@ -78,13 +78,19 @@ service cloud.firestore {
     }
 
     match /clubMembers/{memberId} {
-      allow read: if isStaff() || signedIn() && resource.data.userId == request.auth.uid;
+      allow read: if isStaff() || signedIn();
       allow create: if isStaff() || signedIn()
         && request.resource.data.userId == request.auth.uid
-        && request.resource.data.roleInClub == 'President'
-        && get(/databases/$(database)/documents/clubs/$(request.resource.data.clubId)).data.createdBy
-          == request.auth.uid;
-      allow update, delete: if isStaff();
+        && request.resource.data.roleInClub == 'Member'
+        && request.resource.data.status == 'pending';
+      allow update: if isStaff() || signedIn()
+        && resource.data.userId == request.auth.uid
+        && resource.data.status == 'pending'
+        && request.resource.data.userId == resource.data.userId
+        && request.resource.data.roleInClub == resource.data.roleInClub
+        && request.resource.data.clubId == resource.data.clubId;
+      allow delete: if isStaff() || signedIn()
+        && resource.data.userId == request.auth.uid;
     }
 
     match /permissions/{role} {

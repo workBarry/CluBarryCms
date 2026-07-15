@@ -414,6 +414,19 @@ textarea {
   overflow: auto;
 }
 
+.table-title {
+  padding: 1rem 1rem 0;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.pending-section {
+  margin-bottom: 1rem;
+  border: 1px solid var(--warning);
+  border-radius: 0.5rem;
+  background: #fffbeb;
+}
+
 table {
   width: 100%;
   min-width: 780px;
