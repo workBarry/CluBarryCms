@@ -289,10 +289,8 @@ export class EventsAdminPage {
 
     const start = new Date(input.startTime);
     const end = new Date(input.endTime);
-    const deadline = new Date(input.deadline);
 
     if (end <= start) return '結束時間必須晚於開始時間';
-    if (deadline >= start) return '報名截止必須早於開始時間';
     if (!Number.isFinite(input.capacity) || input.capacity < 1) return '人數限制必須大於 0';
 
     const club = this.clubData.clubs().find((c) => c.id === input.clubId);

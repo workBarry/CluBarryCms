@@ -89,7 +89,7 @@ import { Session } from '../../types/admin.models';
           <input type="checkbox" name="openToNonMember" [(ngModel)]="draft.openToNonMember" /> 開放非社員參加
         </label>
         <div class="modal-actions">
-          <button class="btn primary" type="submit" [disabled]="!draft.eventId || !draft.title">建立場次</button>
+          <button class="btn primary" type="submit" [disabled]="!draft.eventId || !draft.title || !draft.startTime || !draft.endTime">建立場次</button>
         </div>
       </form>
     </section>
@@ -126,6 +126,8 @@ export class SessionsAdminPage {
     const event = this.eventData.findEvent(this.draft.eventId ?? '');
     const clubId = event?.clubId ?? this.clubContext.selectedClubId();
     if (!clubId || !this.draft.eventId || !this.draft.title) return;
+    if (!this.draft.startTime || !this.draft.endTime) return;
+    if (new Date(this.draft.endTime) <= new Date(this.draft.startTime)) return;
     this.eventData.upsertSession({
       id: '',
       eventId: this.draft.eventId,

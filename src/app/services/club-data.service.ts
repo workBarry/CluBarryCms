@@ -68,6 +68,24 @@ export class ClubDataService {
     if (!id) return;
     this.clubs.update((items) => items.map((item) => (item.id === id ? { ...item, status } : item)));
     this.report('club status update', this.firebase.updateClub(id, { status }));
+
+    if (status === 'active') {
+      const creator = this.clubMembers().find(
+        (m) => m.clubId === id && m.roleInClub === 'President' && m.status === 'pending',
+      );
+      if (creator) {
+        const now = new Date().toISOString();
+        const approverName = this.auth.currentUser()?.name ?? '管理員';
+        this.clubMembers.update((items) => items.map((item) => (
+          item.id === creator.id ? { ...item, status: 'active', approvedBy: approverName, approvedAt: now } : item
+        )));
+        this.report('president auto-activate', this.firebase.updateClubMember(creator.id, {
+          status: 'active',
+          approvedBy: approverName,
+          approvedAt: now,
+        }));
+      }
+    }
   }
 
   removeClub(id: string): void {

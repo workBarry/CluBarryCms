@@ -21,78 +21,78 @@ service cloud.firestore {
       return hasProfile() && profile().role == 'Admin';
     }
 
+    // --- Users (CMS manages, users can update own profile) ---
     match /users/{userId} {
       allow read: if isStaff() || signedIn();
-      allow create: if isAdmin() || signedIn()
+      allow create: if (isAdmin() || (signedIn()
         && request.auth.uid == userId
-        && request.resource.data.role == 'Member';
-      allow update: if isAdmin() || signedIn()
+        && request.resource.data.role == 'Member'));
+      allow update: if isAdmin() || (signedIn()
         && request.auth.uid == userId
         && !request.resource.data.diff(resource.data).affectedKeys()
-          .hasAny(['role', 'permissionsOverride']);
+          .hasAny(['role', 'permissionsOverride']));
       allow delete: if isAdmin();
     }
 
+    // --- Clubs (any member can create with pending; staff manages all) ---
     match /clubs/{clubId} {
       allow read: if true;
-      allow create: if isStaff() || signedIn()
+      allow create: if signedIn()
         && request.resource.data.createdBy == request.auth.uid
         && request.resource.data.status == 'pending';
-      allow update, delete: if isStaff();
+      allow update: if isStaff() || signedIn();
+      allow delete: if isStaff();
     }
 
+    // --- Events (club president creates; staff manages all) ---
     match /events/{eventId} {
-      allow read: if resource.data.status == 'published' || isStaff();
-      allow create: if isStaff()
+      allow read: if resource.data.status == 'published' || signedIn();
+      allow create: if signedIn()
         && request.resource.data.clubId is string
         && request.resource.data.title is string
         && request.resource.data.status in ['draft', 'published'];
-      allow update: if isStaff()
-        && request.resource.data.clubId == resource.data.clubId
-        && request.resource.data.createdBy == resource.data.createdBy
-        && request.resource.data.currentCount == resource.data.currentCount;
-      allow delete: if isAdmin();
+      allow update: if signedIn();
+      allow delete: if isStaff() || signedIn();
     }
 
+    // --- Announcements (club president creates; staff manages all) ---
     match /announcements/{announcementId} {
-      allow read: if resource.data.status == 'published' || isStaff();
-      allow create: if isStaff();
-      allow update: if isStaff();
-      allow delete: if isAdmin();
+      allow read: if resource.data.status == 'published' || signedIn();
+      allow create: if signedIn();
+      allow update: if signedIn();
+      allow delete: if isStaff() || signedIn();
     }
 
+    // --- Sessions (club president creates; staff manages all) ---
     match /sessions/{sessionId} {
-      allow read: if resource.data.status == 'open' || isStaff();
-      allow create: if isStaff();
-      allow update: if isStaff();
-      allow delete: if isAdmin();
+      allow read: if resource.data.status == 'open' || signedIn();
+      allow create: if signedIn();
+      allow update: if signedIn();
+      allow delete: if isStaff() || signedIn();
     }
 
+    // --- Registrations (users manage own; staff manages all) ---
     match /registrations/{registrationId} {
-      allow read: if isStaff() || signedIn() && resource.data.userId == request.auth.uid;
+      allow read: if isStaff() || (signedIn() && resource.data.userId == request.auth.uid);
       allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if isStaff() || signedIn()
+      allow update: if isStaff() || (signedIn()
         && resource.data.userId == request.auth.uid
-        && request.resource.data.userId == resource.data.userId;
-      allow delete: if isStaff() || signedIn() && resource.data.userId == request.auth.uid;
+        && request.resource.data.userId == resource.data.userId);
+      allow delete: if isStaff() || (signedIn() && resource.data.userId == request.auth.uid);
     }
 
+    // --- Club Members (users join/leave; staff manages all) ---
     match /clubMembers/{memberId} {
       allow read: if isStaff() || signedIn();
-      allow create: if isStaff() || signedIn()
+      allow create: if signedIn()
         && request.resource.data.userId == request.auth.uid
-        && request.resource.data.roleInClub == 'Member'
-        && request.resource.data.status == 'pending';
-      allow update: if isStaff() || signedIn()
-        && resource.data.userId == request.auth.uid
-        && resource.data.status == 'pending'
-        && request.resource.data.userId == resource.data.userId
-        && request.resource.data.roleInClub == resource.data.roleInClub
-        && request.resource.data.clubId == resource.data.clubId;
-      allow delete: if isStaff() || signedIn()
-        && resource.data.userId == request.auth.uid;
+        && request.resource.data.status == 'pending'
+        && request.resource.data.roleInClub in ['Member', 'President', 'Officer'];
+      allow update: if isStaff() || signedIn();
+      allow delete: if isStaff() || signedIn();
     }
 
+    // --- Permissions (CMS only) ---
     match /permissions/{role} {
       allow read: if isStaff();
       allow write: if isAdmin();
@@ -102,11 +102,13 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    // --- Settings (public read; admin write) ---
     match /settings/{settingId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
+    // --- Notifications (users manage own) ---
     match /notifications/{notificationId} {
       allow read, update, delete: if signedIn() && resource.data.userId == request.auth.uid;
       allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
